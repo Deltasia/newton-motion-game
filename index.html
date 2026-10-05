@@ -61,7 +61,7 @@ body{background:var(--backdrop);color:var(--ink);font-family:var(--f-ui);overflo
 #readout dt{font-family:var(--f-math);font-style:italic}
 #readout dd{margin:0;text-align:right;font-family:var(--f-math)}
 .roCap{align-self:flex-start;font-size:14px;color:var(--slate-ink);margin-bottom:-4px}
-#graph{width:300px;height:84px;flex:none;background:#fff;border-radius:12px}
+#graph{width:300px;height:64px;flex:none;background:#fff;border-radius:12px}
 #playBtn{margin-top:auto}
 .btnWhite{background:#fff;border:none;border-radius:999px;padding:8px 34px;flex:none;font:inherit;font-size:24px;cursor:pointer;color:var(--ink);transition:transform .12s}
 .btnWhite:hover{transform:translateY(-2px)}
@@ -139,7 +139,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
 .btnDark{background:var(--ink);color:#fff;border:none;border-radius:999px;padding:12px 36px;font:inherit;font-size:22px;cursor:pointer}
 #rewind{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;background:rgba(120,90,40,.18);font-size:46px;color:#5a4320;letter-spacing:.05em}
 #rewind span{background:rgba(255,255,255,.85);padding:8px 28px;border-radius:999px}
-#thumb{position:absolute;left:290px;top:110px;font-size:150px;pointer-events:none;animation:pop .5s cubic-bezier(.3,1.6,.5,1) both}
+#thumb{position:absolute;left:720px;top:104px;font-size:120px;line-height:1;pointer-events:none;animation:pop .5s cubic-bezier(.3,1.6,.5,1) both}
 @keyframes pop{from{transform:scale(.2);opacity:0}to{transform:none;opacity:1}}
 #rotate{position:fixed;left:16px;right:16px;bottom:16px;background:var(--ink);color:#fff;border-radius:14px;padding:10px 14px;font-size:14px;text-align:center}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
@@ -156,7 +156,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
       <div id="info"></div>
       <div id="roCap" class="roCap" hidden></div>
       <dl id="readout"></dl>
-      <canvas id="graph" width="600" height="168" aria-label="กราฟความเร็วกับเวลา"></canvas>
+      <canvas id="graph" width="600" height="128" aria-label="กราฟความเร็วกับเวลา"></canvas>
       <button id="playBtn" class="btnWhite">ผลัก/เล่น</button>
     </div>
 
@@ -233,6 +233,8 @@ function say(who, html, o = {}){
   renderSpeaker(who, o);
   const t = $('dtext');
   t.innerHTML = html;
+  t.style.fontSize = '';
+  if (t.scrollHeight > 70) t.style.fontSize = '19px';
   if (html.includes('\\(') && window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([t]).catch(() => {});
   t.classList.remove('in'); void t.offsetWidth; t.classList.add('in');
   const ch = $('choices'); ch.innerHTML = '';
@@ -360,14 +362,14 @@ function updateReadout(){
 function drawGraph(hist){
   const g = $('graph'), c = g.getContext('2d');
   c.setTransform(2,0,0,2,0,0);
-  c.clearRect(0,0,300,84);
-  const x0 = 34, y0 = 70, w = 252, h = 52;
+  c.clearRect(0,0,300,64);
+  const x0 = 34, y0 = 54, w = 252, h = 38;
   const tMax = Math.max(4, hist.length ? hist[hist.length-1].t * 1.1 : 4);
   const vMax = Math.max(1, ...hist.map(p => p.v)) * 1.25;
   c.strokeStyle = '#9aa3ae'; c.lineWidth = 1;
   c.beginPath(); c.moveTo(x0, y0-h-6); c.lineTo(x0, y0); c.lineTo(x0+w, y0); c.stroke();
   c.fillStyle = '#56606e'; c.font = `italic 12px ${MATH}`;
-  c.fillText('v', x0-14, y0-h); c.fillText('t', x0+w-4, y0+13);
+  c.fillText('v', x0-14, y0-h+6); c.fillText('t', x0+w+5, y0+4);
   c.font = `11px ${FONT}`; c.fillText('กราฟ v–t', x0+6, 12);
   if (hist.length < 2) return;
   c.strokeStyle = COL.teal; c.lineWidth = 2.2; c.beginPath();
@@ -643,15 +645,15 @@ function Level1(){
       if (rough && fNow > 0){
         const len = 24 + Math.min(fNow, 160)*0.9, fx = P(v, c.x);
         arrow(fx, v.gy - 7, fx - len, v.gy - 7, COL.fric, 7, 16);
-        text(`f = ${fNow.toFixed(1)} N`, fx - len - 8, v.gy - 2, { size:16, align:'right', color:COL.fric, math:true, italic:false });
+        text(`f = ${fNow.toFixed(1)} N`, P(v, c.x - 0.4) - 6, v.gy - 14, { size:16, align:'right', color:COL.fric, math:true, italic:false });
       }
-      if (c.v > 0.005 && c.x < 9.2){                        // velocity: thin blue arrow from the middle of the box
+      if (c.v > 0.005 && P(v, c.x) < 800){                 // velocity: thin blue arrow from the middle of the box
         const fx = P(v, c.x), len = Math.min(220, c.v*40), vy = Y(v, 0.35);
         velArrow(fx, vy, fx + len, vy);
-        text(`v = ${c.v.toFixed(2)} m/s`, fx + len + 8, vy + 6, { size:16, color:COL.vel, math:true, italic:false });
+        text('v', Math.max(fx + len, P(v, c.x + 0.4)) + 6, vy + 6, { size:18, color:COL.vel, math:true });
       }
       drawLegend();
-      if (this.bubble && c.x < 9.2) bubble(this.bubble, P(v, r.x) - 30, Y(v, r.y + 1.35), { size:26 });
+      if (this.bubble && c.x < 6.4) bubble(this.bubble, P(v, r.x) - 30, Y(v, r.y + 1.35), { size:26 });
       if (this.timeScale > 1) text(`เร่งเวลา ×${this.timeScale.toFixed(1)}`, 24, 108, { size:17, color:COL.muted });
     }
   };
@@ -843,7 +845,7 @@ function Projectile(){
       ctx.beginPath(); ctx.moveTo(P(v, this.edge), Y(v, this.hLaunch)); ctx.lineTo(hx + 8, Y(v, this.hLaunch)); ctx.stroke();
       ctx.setLineDash([]);
       dimLine(hx, v.gy, hx, Y(v, this.hLaunch), '', { color:COL.muted });
-      if (!this.showGuides) text('h = 1.9 m', hx + 10, Y(v, 0.55), { size:18, math:true, italic:false, color:COL.muted });
+      if (!this.showGuides && !['fly', 'landed'].includes(this.phase)) text('h = 1.9 m', hx + 10, Y(v, 0.55), { size:18, math:true, italic:false, color:COL.muted });
       }
       dimLine(P(v, this.edge), v.gy + 42, P(v, this.flagX), v.gy + 42, 'D = 3.0 m', { color:COL.muted });
       // flag + cushion
@@ -877,24 +879,26 @@ function Projectile(){
       }
       // velocity of Ryuka (14 px per m/s); in flight split into vx (constant) and vy (growing)
       // arrows start at Ryuka's belt (0.46 m above the feet), following the sprite's tilt in flight
-      const K = 14, belt = 0.14*s, rot = r.rot || 0;
+      const K = 10, belt = 0.14*s, rot = r.rot || 0;
       const cx = P(v, r.x) - belt*Math.sin(rot), cy = Y(v, r.y) - 0.6*s + belt*Math.cos(rot);
       if (this.phase === 'ready' || this.phase === 'roll' || this.phase === 'slide'){
         if (this.v > 0){
           velArrow(cx, cy, cx + this.v*K, cy);
-          text(`v = ${this.v.toFixed(1)} m/s`, cx + this.v*K + 8, cy + 6, { size:17, color:COL.vel, math:true, italic:false });
+          text(`v = ${this.v.toFixed(1)} m/s`, Math.max(cx + this.v*K, cx + 46) + 8, cy + 6, { size:17, color:COL.vel, math:true, italic:false });
         }
       }
       if (this.phase === 'fly'){
         const vy = G*Math.min(this.ft, this.tFlight());
         arrow(cx - 26, cy, cx - 26, cy + 70, COL.red, 7, 16);
-        text('mg', cx - 34, cy + 64, { math:true, size:20, align:'right' });
+        if (cx - 60 > P(v, this.edge) + 16 && cy + 92 < v.gy - 6) text('mg', cx - 26, cy + 92, { math:true, size:20, align:'center' });   // under its arrow, not over the cart
         velArrow(cx, cy, cx + this.v*K, cy, COL.velLight, 3, 11);
         velArrow(cx, cy, cx, cy + vy*K, COL.velLight, 3, 11);
         velArrow(cx, cy, cx + this.v*K, cy + vy*K);
-        subLabel('v', 'x', cx + this.v*K + 6, cy - 6, { size:18, color:'#5B7FD0' });
-        if (vy*K > 18) subLabel('v', 'y', cx + 6, cy + vy*K + 4, { size:18, color:'#5B7FD0' });
-        subLabel('v', '', cx + this.v*K + 8, cy + vy*K + 8, { size:20 });
+        const lx = Math.max(cx + this.v*K, cx + 46) + 6, floorY = v.gy - 6;
+        if (vy*K > 14) subLabel('v', 'x', lx, cy - 6, { size:18, color:'#5B7FD0' });   // once it splits from v
+        if (vy*K > 40 && cy + vy*K + 4 < floorY) subLabel('v', 'y', cx + 6, cy + vy*K + 4, { size:18, color:'#5B7FD0' });
+        const ry = cy + Math.max(vy*K, 20) + 20;
+        if (ry < floorY) subLabel('v', '', lx + 2, ry, { size:20 });
       }
       drawLegend();
       if (this.land){
@@ -905,7 +909,7 @@ function Projectile(){
       if (this.bubble){
         if (this.land && !this.land.ok){
           if (this.land.x > this.flagX) bubble(this.bubble, P(v, r.x + 0.7), Y(v, 0.45));
-          else bubble(this.bubble, P(v, r.x), Y(v, 0.95), { align:'center' });
+          else bubble(this.bubble, P(v, r.x), Y(v, 1.15), { align:'center' });
         } else bubble(this.bubble, P(v, r.x), Y(v, 2.05), { align:'center' });
       }
       if (this.timeScale < 1) text('สโลว์โมชัน ×0.35', 24, 108, { size:17, color:COL.muted });
