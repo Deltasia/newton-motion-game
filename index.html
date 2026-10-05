@@ -524,7 +524,7 @@ function bubble(t, x, y, o = {}){ text(t, x, y, { size:o.size || 24, align:o.ali
    ========================================================= */
 function Level1(){
   const S = {
-    view:{ ox:110, gy:470, s:110 }, m:40, mu:0, F:100, x0:0.6, pushEnd:1.4, targetX:4.6, flagX:5.35, tol:0.25,
+    view:{ ox:110, gy:470, s:110 }, m:40, mu:0, F:100, x0:0.6, pushEnd:1.4, targetX:4.6, flagX:5.9, tol:0.25,
     showMass:false, live:false, timeScale:1,
     f(){ return this.mu*this.m*G; },
     reset(){
@@ -603,7 +603,8 @@ function Level1(){
           }
         }
         r.x = c.x; r.y = 0.7;
-        if (c.x - 0.4 > this.flagX && !this.flags.pass){ this.flags.pass = 1; if (this.mu === 0) this.bubble = 'บ๊ายบาย~'; emit('passFlag'); }
+        if (this.mu === 0 && c.x > this.targetX + this.tol && !this.flags.over){ this.flags.over = 1; this.bubble = 'บ๊ายบาย~'; }   // sailing past the spot
+        if (c.x - 0.4 > this.flagX && !this.flags.pass){ this.flags.pass = 1; emit('passFlag'); }
         if (c.x > 8.9 && this.phase !== 'stopped' && !this.flags.gone){ this.flags.gone = 1; emit('gone'); }
         if (this.phase !== 'stopped' && this.t - this.hist[this.hist.length-1].t > 0.05 && this.t < 60) this.hist.push({ t:this.t, v:c.v });
       }
@@ -634,7 +635,7 @@ function Level1(){
       const away = P(v, r.x) - 50 > exitX;
       if (!away){
         drawCart(P(v, c.x), v.gy, s, this.showMass ? `${this.m} kg` : null);
-        drawRyuka(P(v, r.x), Y(v, r.y), s, { sad: this.mu === 0 && this.flags.pass });
+        drawRyuka(P(v, r.x), Y(v, r.y), s, { sad: this.mu === 0 && this.flags.over });
       }
       if (this.phase === 'ready') fbd(P(v, c.x), 150, { f:rough });
       const back = P(v, c.x - 0.4);
@@ -652,10 +653,10 @@ function Level1(){
         arrow(fx, v.gy - 7, fx - len, v.gy - 7, COL.fric, 7, 16);
         text(`f = ${fNow.toFixed(1)} N`, P(v, c.x - 0.4) - 6, v.gy - 14, { size:16, align:'right', color:COL.fric, math:true, italic:false });
       }
-      if (c.v > 0.005 && P(v, c.x) < 800){                 // velocity: thin blue arrow from the middle of the box
+      if (c.v > 0.005 && P(v, c.x) < 720){                 // velocity: thin blue arrow from the middle of the box (gone before its label reaches the panel)
         const fx = P(v, c.x), len = Math.min(220, c.v*40), vy = Y(v, 0.35);
         velArrow(fx, vy, fx + len, vy);
-        text('v', Math.max(fx + len, P(v, c.x + 0.4)) + 6, vy + 6, { size:18, color:COL.vel, math:true });
+        text(`v = ${c.v.toFixed(2)} m/s`, Math.max(fx + len, P(v, c.x + 0.4)) + 6, vy + 5, { size:15, color:COL.vel, math:true, italic:false });
       }
       drawLegend();
       // the bubble travels with Ryuka, sliding behind the panel with her, until she has left
