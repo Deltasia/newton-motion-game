@@ -833,11 +833,13 @@ function Projectile(){
       }
       // dimensions h and D
       const hx = P(v, this.edge + 0.32);
+      if (!this.showPair){                                   // hidden while the impact-force pair is explained
       ctx.setLineDash([5, 5]); ctx.strokeStyle = '#b5bcc6'; ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.moveTo(P(v, this.edge), Y(v, this.hLaunch)); ctx.lineTo(hx + 8, Y(v, this.hLaunch)); ctx.stroke();
       ctx.setLineDash([]);
       dimLine(hx, v.gy, hx, Y(v, this.hLaunch), '', { color:COL.muted });
       if (!this.showGuides) text('h = 1.9 m', hx + 10, Y(v, 0.55), { size:18, math:true, italic:false, color:COL.muted });
+      }
       dimLine(P(v, this.edge), v.gy + 42, P(v, this.flagX), v.gy + 42, 'D = 3.0 m', { color:COL.muted });
       // flag + cushion
       drawFlag(P(v, this.flagX), v.gy, s);
@@ -862,11 +864,11 @@ function Projectile(){
       drawRyuka(P(v, r.x), Y(v, r.y), s, { rot:r.rot, lie:this.land && !this.land.ok, sad:this.phase === 'fly' || (this.land && !this.land.ok) });
       // 3rd-law pair at the impact
       if ((this.pairT < 0.22 && (this.phase === 'slide' || this.phase === 'fly')) || this.showPair){
-        const ix = P(v, this.edge), iy = Y(v, 1.2 + 0.3);
+        const ix = P(v, this.edge), iy = Y(v, 1.2 + 0.2);
         arrow(ix + 4, iy - 10, ix + 70, iy - 10, COL.red, 7, 16);
         arrow(ix - 4, iy + 12, ix - 70, iy + 12, COL.red, 7, 16);
-        text('รถดันที่กั้น', ix + 74, iy - 4, { size:14 });
-        text('ที่กั้นดันรถ', ix - 40, iy + 58, { size:14, align:'center' });
+        text('รถดันที่กั้น', ix + 22, iy + 16, { size:14 });
+        text('ที่กั้นดันรถ', ix - 40, iy + 50, { size:14, align:'center' });
       }
       // velocity of Ryuka (14 px per m/s); in flight split into vx (constant) and vy (growing)
       // arrows start at Ryuka's belt (0.46 m above the feet), following the sprite's tilt in flight
