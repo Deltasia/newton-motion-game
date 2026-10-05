@@ -327,6 +327,14 @@ function showPanel(mode, init = {}){
     };
     r.addEventListener('input', () => set(+r.value, 'r'));
     n.addEventListener('change', () => set(parseFloat(n.value)));
+    n.addEventListener('input', () => {                    // live while typing, without rewriting the box
+      const val = parseFloat(n.value);
+      if (isFinite(val) && val >= min && val <= max){
+        pval[k] = val; r.value = val;
+        $('info').innerHTML = M.info(pval);
+        if (scene && scene.onParam) scene.onParam(pval);
+      }
+    });
     set(pval[k]);
   });
   $('playBtn').textContent = M.btn;
