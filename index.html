@@ -34,7 +34,7 @@ body{background:var(--backdrop);color:var(--ink);font-family:var(--f-ui);overflo
 #title{position:absolute;top:20px;left:0;width:1280px;text-align:center;font-size:30px;font-weight:400;pointer-events:none;text-wrap:balance}
 
 /* parameter panel */
-#panel{position:absolute;left:896px;top:40px;width:344px;height:500px;background:var(--slate);border-radius:36px;padding:16px 22px 18px;display:flex;flex-direction:column;align-items:center;gap:6px}
+#panel{position:absolute;left:896px;top:16px;width:344px;height:524px;background:var(--slate);border-radius:36px;padding:16px 22px 18px;display:flex;flex-direction:column;align-items:center;gap:6px}
 .pill{background:#fff;border-radius:14px;padding:5px 20px;font-size:21px}
 .params{width:100%;display:flex;flex-direction:column}
 .prow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:4px}
@@ -61,7 +61,7 @@ body{background:var(--backdrop);color:var(--ink);font-family:var(--f-ui);overflo
 #readout dt{font-family:var(--f-math);font-style:italic}
 #readout dd{margin:0;text-align:right;font-family:var(--f-math)}
 .roCap{align-self:flex-start;font-size:14px;color:var(--slate-ink);margin-bottom:-4px}
-#graph{width:300px;height:64px;flex:none;background:#fff;border-radius:12px}
+#graph{width:300px;height:90px;flex:none;background:#fff;border-radius:12px}
 #playBtn{margin-top:auto}
 .btnWhite{background:#fff;border:none;border-radius:999px;padding:8px 34px;flex:none;font:inherit;font-size:24px;cursor:pointer;color:var(--ink);transition:transform .12s}
 .btnWhite:hover{transform:translateY(-2px)}
@@ -156,7 +156,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
       <div id="info"></div>
       <div id="roCap" class="roCap" hidden></div>
       <dl id="readout"></dl>
-      <canvas id="graph" width="600" height="128" aria-label="กราฟความเร็วกับเวลา"></canvas>
+      <canvas id="graph" width="600" height="180" aria-label="กราฟความเร็วกับเวลา"></canvas>
       <button id="playBtn" class="btnWhite">ผลัก/เล่น</button>
     </div>
 
@@ -362,8 +362,8 @@ function updateReadout(){
 function drawGraph(hist){
   const g = $('graph'), c = g.getContext('2d');
   c.setTransform(2,0,0,2,0,0);
-  c.clearRect(0,0,300,64);
-  const x0 = 34, y0 = 54, w = 252, h = 38;
+  c.clearRect(0,0,300,90);
+  const x0 = 34, y0 = 76, w = 252, h = 56;
   const tMax = Math.max(4, hist.length ? hist[hist.length-1].t * 1.1 : 4);
   const vMax = Math.max(1, ...hist.map(p => p.v)) * 1.25;
   c.strokeStyle = '#9aa3ae'; c.lineWidth = 1;
@@ -630,13 +630,8 @@ function Level1(){
       if (c.x < this.targetX - 0.05 && this.phase !== 'rewind')
         dimLine(P(v, c.x), v.gy + 40, P(v, this.targetX), v.gy + 40, `ระยะถึงจุดจอด ${(this.targetX - c.x).toFixed(1)} m`);
       drawFlag(P(v, this.flagX), v.gy, s);
-      // once Ryuka is fully behind the panel she has left the scene (don't reappear in the strip to its right)
-      const exitX = $('panel').hidden ? W : $('panel').offsetLeft;
-      const away = P(v, r.x) - 50 > exitX;
-      if (!away){
-        drawCart(P(v, c.x), v.gy, s, this.showMass ? `${this.m} kg` : null);
-        drawRyuka(P(v, r.x), Y(v, r.y), s, { sad: this.mu === 0 && this.flags.over });
-      }
+      drawCart(P(v, c.x), v.gy, s, this.showMass ? `${this.m} kg` : null);
+      drawRyuka(P(v, r.x), Y(v, r.y), s, { sad: this.mu === 0 && this.flags.over });
       if (this.phase === 'ready') fbd(P(v, c.x), 150, { f:rough });
       const back = P(v, c.x - 0.4);
       const pushing = this.phase === 'push' || (this.phase === 'idle' && this.F > 0);
@@ -659,8 +654,8 @@ function Level1(){
         text(`v = ${c.v.toFixed(2)} m/s`, Math.max(fx + len, P(v, c.x + 0.4)) + 6, vy + 5, { size:15, color:COL.vel, math:true, italic:false });
       }
       drawLegend();
-      // the bubble travels with Ryuka, sliding behind the panel with her, until she has left
-      if (this.bubble && !away) bubble(this.bubble, P(v, r.x) - 30, Y(v, r.y + 1.35), { size:26 });
+      // the bubble travels with Ryuka: behind the panel, out the other side, until she leaves the stage
+      if (this.bubble && P(v, r.x) - 50 < W) bubble(this.bubble, P(v, r.x) - 30, Y(v, r.y + 1.35), { size:26 });
       if (this.timeScale > 1) text(`เร่งเวลา ×${this.timeScale.toFixed(1)}`, 24, 108, { size:17, color:COL.muted });
     }
   };
