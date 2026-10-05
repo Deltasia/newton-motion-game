@@ -382,7 +382,6 @@ function text(t, x, y, o = {}){
   ctx.textAlign = 'left'; ctx.textBaseline = o.base || 'alphabetic';
   const w = ctx.measureText(t).width;
   const x0 = o.align === 'center' ? x - w/2 : o.align === 'right' ? x - w : x;
-  if (o.halo){ ctx.lineWidth = 6; ctx.strokeStyle = '#fff'; ctx.lineJoin = 'round'; ctx.strokeText(t, x0, y); }
   ctx.fillStyle = o.color || COL.ink; ctx.fillText(t, x0, y);
   return w;
 }
@@ -421,7 +420,7 @@ function drawFloor(v, o = {}){
       if (!o.scroll) text(`${m} m`, x, gy+26, { size:13, align:'center', color:COL.muted });
     }
   }
-  if (o.label) text(o.label, 14, gy+24, { size:14, color:COL.muted, halo:true });
+  if (o.label) text(o.label, 14, gy+24, { size:14, color:COL.muted });
 }
 function drawFlag(x, gy, s){
   const top = gy - 1.55*s;
@@ -462,8 +461,8 @@ function dimLine(x1, y1, x2, y2, label, o = {}){
   else { ctx.moveTo(x1, y1-k); ctx.lineTo(x1, y1+k); ctx.moveTo(x2, y2-k); ctx.lineTo(x2, y2+k); }
   ctx.stroke();
   if (label){
-    if (vert) text(label, x1 + 10, (y1+y2)/2 + 6, { size:18, color:o.color, halo:true, math:o.math });
-    else text(label, (x1+x2)/2, y1 + 24, { size:17, align:'center', color:o.color, halo:true, math:o.math });
+    if (vert) text(label, x1 + 10, (y1+y2)/2 + 6, { size:18, color:o.color, math:o.math });
+    else text(label, (x1+x2)/2, y1 + 24, { size:17, align:'center', color:o.color, math:o.math });
   }
 }
 function fbd(cx, cy, o = {}){
@@ -489,8 +488,8 @@ function velArrow(x1, y1, x2, y2, color = COL.vel, w = 5, head = 15){
   arrow(x1, y1, x2, y2, color, w, head);
 }
 function subLabel(main, sub, x, y, o = {}){
-  const w = text(main, x, y, { math:true, size:o.size || 20, halo:true, color:o.color || COL.vel });
-  if (sub) text(sub, x + w + 1, y + 5, { math:true, size:(o.size || 20)*0.65, halo:true, color:o.color || COL.vel });
+  const w = text(main, x, y, { math:true, size:o.size || 20, color:o.color || COL.vel });
+  if (sub) text(sub, x + w + 1, y + 5, { math:true, size:(o.size || 20)*0.65, color:o.color || COL.vel });
 }
 function drawLegend(){
   arrow(24, 34, 60, 34, COL.red, 8, 16);
@@ -498,7 +497,7 @@ function drawLegend(){
   velArrow(118, 34, 154, 34);
   text('ความเร็ว', 162, 40, { size:15, color:COL.muted });
 }
-function bubble(t, x, y, o = {}){ text(t, x, y, { size:o.size || 24, align:o.align || 'left', halo:true, color:o.color }); }
+function bubble(t, x, y, o = {}){ text(t, x, y, { size:o.size || 24, align:o.align || 'left', color:o.color }); }
 
 /* =========================================================
    Scene: Level 1 — push the cart(?) to the flag, on ice (μ = 0) or a rough floor
@@ -619,7 +618,7 @@ function Level1(){
       if (pushing){
         const len = 30 + Math.min(this.F, 160)*0.9;
         gradArrow(back - len - 6, Y(v, 0.35), back - 4);
-        text(`F = ${this.F} N`, back - len/2 - 6, Y(v, 0.35) - 18, { size:18, align:'center', halo:true, math:true, italic:false });
+        text(`F = ${this.F} N`, back - len/2 - 6, Y(v, 0.35) - 18, { size:18, align:'center', math:true, italic:false });
       }
       // friction acts along the floor, opposite to the sliding (static: just enough to cancel the push)
       const fNow = this.phase === 'push' || this.phase === 'coast' ? f
@@ -627,12 +626,12 @@ function Level1(){
       if (rough && fNow > 0){
         const len = 24 + Math.min(fNow, 160)*0.9, fx = P(v, c.x);
         arrow(fx, v.gy - 7, fx - len, v.gy - 7, COL.fric, 7, 16);
-        text(`f = ${fNow.toFixed(1)} N`, fx - len - 8, v.gy - 2, { size:16, align:'right', halo:true, color:COL.fric, math:true, italic:false });
+        text(`f = ${fNow.toFixed(1)} N`, fx - len - 8, v.gy - 2, { size:16, align:'right', color:COL.fric, math:true, italic:false });
       }
       if (c.v > 0.005 && c.x < 9.2){                        // velocity: thin blue arrow from the middle of the box
         const fx = P(v, c.x), len = Math.min(220, c.v*40), vy = Y(v, 0.35);
         velArrow(fx, vy, fx + len, vy);
-        text(`v = ${c.v.toFixed(2)} m/s`, fx + len + 8, vy + 6, { size:16, halo:true, color:COL.vel, math:true, italic:false });
+        text(`v = ${c.v.toFixed(2)} m/s`, fx + len + 8, vy + 6, { size:16, color:COL.vel, math:true, italic:false });
       }
       drawLegend();
       if (this.bubble && c.x < 9.2) bubble(this.bubble, P(v, r.x) - 30, Y(v, r.y + 1.35), { size:26 });
@@ -662,7 +661,7 @@ function Moving(vel){
       const len = Math.min(220, this.v*40), vy = v.gy - 0.35*v.s;
       velArrow(this.cx, vy, this.cx + len, vy);
       drawLegend();
-      text('ยังขยับอยู่ >>', this.cx - 75, v.gy - 0.7*v.s - 70, { size:26, align:'right', halo:true });
+      text('ยังขยับอยู่ >>', this.cx - 75, v.gy - 0.7*v.s - 70, { size:26, align:'right' });
       text(`v = ${this.v.toFixed(2)} m/s (คงที่)`, this.cx, v.gy + 56, { size:19, align:'center', color:COL.muted });
       if (this.bubble) bubble(this.bubble, this.cx + 40, v.gy - 0.7*v.s - 145, { size:26, align:'center' });
     }
@@ -818,7 +817,7 @@ function Projectile(){
       ctx.beginPath(); ctx.moveTo(P(v, this.edge), Y(v, this.hLaunch)); ctx.lineTo(hx + 8, Y(v, this.hLaunch)); ctx.stroke();
       ctx.setLineDash([]);
       dimLine(hx, v.gy, hx, Y(v, this.hLaunch), '', { color:COL.muted });
-      if (!this.showGuides) text('h = 1.9 m', hx + 10, Y(v, 0.55), { size:18, halo:true, math:true, italic:false, color:COL.muted });
+      if (!this.showGuides) text('h = 1.9 m', hx + 10, Y(v, 0.55), { size:18, math:true, italic:false, color:COL.muted });
       dimLine(P(v, this.edge), v.gy + 42, P(v, this.flagX), v.gy + 42, 'D = 3.0 m', { color:COL.muted });
       // flag + cushion
       drawFlag(P(v, this.flagX), v.gy, s);
@@ -846,21 +845,21 @@ function Projectile(){
         const ix = P(v, this.edge), iy = Y(v, 1.2 + 0.3);
         arrow(ix + 4, iy - 10, ix + 70, iy - 10, COL.red, 7, 16);
         arrow(ix - 4, iy + 12, ix - 70, iy + 12, COL.red, 7, 16);
-        text('รถดันที่กั้น', ix + 74, iy - 4, { size:14, halo:true });
-        text('ที่กั้นดันรถ', ix - 40, iy + 58, { size:14, align:'center', halo:true });
+        text('รถดันที่กั้น', ix + 74, iy - 4, { size:14 });
+        text('ที่กั้นดันรถ', ix - 40, iy + 58, { size:14, align:'center' });
       }
       // velocity of Ryuka (14 px per m/s); in flight split into vx (constant) and vy (growing)
       const K = 14, cx = P(v, r.x), cy = Y(v, r.y) - 0.6*s;
       if (this.phase === 'ready' || this.phase === 'roll' || this.phase === 'slide'){
         if (this.v > 0){
           velArrow(cx, cy, cx + this.v*K, cy);
-          text(`v = ${this.v.toFixed(1)} m/s`, cx + this.v*K + 8, cy + 6, { size:17, halo:true, color:COL.vel, math:true, italic:false });
+          text(`v = ${this.v.toFixed(1)} m/s`, cx + this.v*K + 8, cy + 6, { size:17, color:COL.vel, math:true, italic:false });
         }
       }
       if (this.phase === 'fly'){
         const vy = G*Math.min(this.ft, this.tFlight());
         arrow(cx - 26, cy, cx - 26, cy + 70, COL.red, 7, 16);
-        text('mg', cx - 34, cy + 64, { math:true, size:20, align:'right', halo:true });
+        text('mg', cx - 34, cy + 64, { math:true, size:20, align:'right' });
         velArrow(cx, cy, cx + this.v*K, cy, COL.velLight, 3, 11);
         velArrow(cx, cy, cx, cy + vy*K, COL.velLight, 3, 11);
         velArrow(cx, cy, cx + this.v*K, cy + vy*K);
