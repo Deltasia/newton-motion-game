@@ -179,7 +179,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
 
 <script>
 'use strict';
-const W = 1280, H = 720, G = 9.8;
+const W = 1280, H = 720, G = 9.81;
 const $ = id => document.getElementById(id);
 const stage = $('stage'), cv = $('cv'), ctx = cv.getContext('2d');
 const FONT = '"IBM Plex Sans Thai Looped","Noto Sans Thai",Tahoma,sans-serif';
@@ -291,12 +291,12 @@ const MODES = {
   push:    { params:[['F',0,300,10]], btn:'ผลัก/เล่น', graph:true, rows:MOTION_ROWS,
              info:() => 'มวลรถ(?) + ริวกะ = 40 kg<br>ผลักแค่ช่วง 0.8 m แรก' },
   fric:    { params:[['F',0,300,1]], btn:'ผลัก/เล่น', graph:true, rows:MOTION_ROWS,
-             info:() => 'm = 40 kg · μ = 0.10 · f = μmg = 39.2 N<br>ผลักแค่ช่วง 0.8 m แรก' },
+             info:() => 'm = 40 kg · μ = 0.10 · f = μmg = 39.24 N<br>ผลักแค่ช่วง 0.8 m แรก' },
   sandbox: { params:[['F',0,1000,1],['m',20,80,1],['mu',0,0.25,0.01]], btn:'ผลัก/เล่น', graph:true, rows:MOTION_ROWS,
-             info:p => `แรงเสียดทาน f = μmg = ${(p.mu*p.m*G).toFixed(1)} N` },
+             info:p => `แรงเสียดทาน f = μmg = ${(p.mu*p.m*G).toFixed(2)} N` },
   speed:   { params:[['v',0,8,0.1]], btn:'ปล่อยรถ/เล่น', graph:false,
-             rows:[['t','s'],['x','m'],['Δy','m'],['v<sub>x</sub>','m/s'],['v<sub>y</sub>','m/s']],
-             info:() => 't, x นับจากจุดปล่อยรถ (0 m)<br>h = 1.9 m · D = 3.0 m · g = 9.8 m/s²' }
+             rows:[['t','s'],['t<sub>ลอย</sub>','s'],['x','m'],['Δy','m'],['v<sub>x</sub>','m/s'],['v<sub>y</sub>','m/s']],
+             info:() => 'x = 0 ที่ขอบแท่น · t นับจากจุดปล่อยรถ<br>h = 1.9 m · D = 3.0 m · g = 9.81 m/s²' }
 };
 const pval = { F:40, m:40, mu:0.1, v:3 };
 let panelMode = null, readRows = [];
@@ -429,7 +429,7 @@ function drawFloor(v, o = {}){
     for (let m = from; m <= to; m++){
       const x = P(v, zero + m) - sc % v.s * (o.scroll ? 1 : 0);
       ctx.beginPath(); ctx.moveTo(x, gy); ctx.lineTo(x, gy+8); ctx.stroke();
-      if (!o.scroll) text(`${m} m`, x, gy+26, { size:13, align:'center', color:COL.muted });
+      if (!o.scroll) text(`${m < 0 ? '−' + (-m) : m} m`, x, gy+26, { size:13, align:'center', color:COL.muted });
     }
   }
   if (o.label) text(o.label, 14, gy+24, { size:14, color:COL.muted });
@@ -797,24 +797,26 @@ function Projectile(){
       }
     },
     readout(){
-      // t and x run from the moment the cart is released (Ryuka's start = 0); Δy and vy start at the edge
-      if (this.phase === 'rewind') return [null, null, null, null, null];
+      // t: since the cart is released · t_air: since Ryuka leaves the edge
+      // x: measured from the platform edge (x = 0 where the flight starts, flag at x = D); negative on the platform
+      if (this.phase === 'rewind') return [null, null, null, null, null, null];
+      const x0 = 0.2, roll = this.edge - x0;
       if (this.phase === 'ready' && this.v > 0){            // while the slider moves: predicted values at touchdown
         const tl = this.tFlight();
-        return [ ((this.edge - 0.2)/this.v + tl).toFixed(2), (this.edge - 0.2 + this.v*tl).toFixed(2),
+        return [ (roll/this.v + tl).toFixed(2), tl.toFixed(2), (this.v*tl).toFixed(2),
                  this.hLaunch.toFixed(2), this.v.toFixed(2), (-G*tl).toFixed(2) ];
       }
-      const x0 = 0.2, inAir = this.phase === 'fly' || this.phase === 'landed';
+      const inAir = this.phase === 'fly' || this.phase === 'landed';
       const ft = inAir ? this.ft : 0;
       const moving = this.phase !== 'ready' && this.phase !== 'still';
-      const T = !moving ? 0 : inAir ? (this.edge - x0)/this.v + ft : (this.ry.x - x0)/this.v;
-      const X = moving ? this.ry.x - x0 : 0;
+      const T = !moving ? 0 : inAir ? roll/this.v + ft : (this.ry.x - x0)/this.v;
+      const X = (moving ? this.ry.x : x0) - this.edge;
       const vx = this.phase === 'still' ? 0 : this.v;
-      return [ T.toFixed(2), X.toFixed(2), (0.5*G*ft*ft).toFixed(2), vx.toFixed(2), (ft ? -G*ft : 0).toFixed(2) ];
+      return [ T.toFixed(2), ft.toFixed(2), X.toFixed(2), (0.5*G*ft*ft).toFixed(2), vx.toFixed(2), (ft ? -G*ft : 0).toFixed(2) ];
     },
     draw(){
       const v = this.view, s = v.s, c = this.cart, r = this.ry;
-      drawFloor(v, { ticks:{ from:0, to:this.ticksTo || 6, zero:0.2 } });
+      drawFloor(v, { ticks:{ from:-1, to:this.ticksTo || 5, zero:this.edge } });
       // ice platform
       const px0 = P(v, -0.8), px1 = P(v, this.edge + 0.12), top = Y(v, 1.2);
       ctx.fillStyle = '#D6E8EE'; ctx.fillRect(px0, top, px1 - px0, v.gy - top);
@@ -1049,7 +1051,7 @@ async function frictionLevel(){
   L.mu = 0.1;
   await rewindFx(L);
   showPanel('fric', { F:150 });
-  await say('dad', '“พื้นนี้มีสัมประสิทธิ์ความเสียดทาน μ = 0.10 รถ(?)กับริวกะหนัก 40 kg แรงเสียดทานจึงเป็น f = μmg = 0.10 × 40 × 9.8 = 39.2 N”');
+  await say('dad', '“พื้นนี้มีสัมประสิทธิ์ความเสียดทาน μ = 0.10 รถ(?)กับริวกะหนัก 40 kg แรงเสียดทานจึงเป็น f = μmg = 0.10 × 40 × 9.81 = 39.24 N”');
   await say('dad', '“แรงเสียดทานชี้<b>สวนทางการเคลื่อนที่</b>เสมอ ลองหาแรงผลักที่ทำให้รถค่อยๆ ช้าลงแล้วจอดใน<b>ช่องสีเขียวหน้าธง</b>พอดีสิ”');
   let fails = 0;
   while (true){
@@ -1063,7 +1065,7 @@ async function frictionLevel(){
       if (F === 0) await say('ryuka', '“ไม่ผลักเลย ก็ไม่ขยับสิ”');
       else {
         await say('ryuka', `“ผลักตั้ง ${F} N แต่รถไม่ขยับเลย!”`, { sad:true });
-        await say('dad', `“แรงผลัก ${F} N ยังไม่มากกว่าแรงเสียดทาน 39.2 N พื้นเลยออกแรงเสียดทานต้านเท่ากับแรงผลักพอดี ΣF = 0 รถจึงนิ่งอยู่”`);
+        await say('dad', `“แรงผลัก ${F} N ยังไม่มากกว่าแรงเสียดทาน 39.24 N พื้นเลยออกแรงเสียดทานต้านเท่ากับแรงผลักพอดี ΣF = 0 รถจึงนิ่งอยู่”`);
       }
       L.reset(); continue;
     }
@@ -1077,8 +1079,8 @@ async function frictionLevel(){
     const msg = r.name === 'gone' ? 'ไถลเลยธงไปไกลมาก ลองลดแรงผลัก'
       : r.data.err < 0 ? `จอดก่อนถึงจุดจอด ${(-r.data.err).toFixed(2)} m ลองเพิ่มแรงผลัก`
       : `จอดเลยจุดจอดไป ${r.data.err.toFixed(2)} m ลองลดแรงผลัก`;
-    if (fails === 2) await say('dad', `“${msg} ใบ้ให้: หลังปล่อยมือ รถต้องไถลต่ออีก 3.2 m และช้าลงด้วย a = f/m = 0.98 m/s² ตอนปล่อยมือจึงควรมีความเร็ว v = √(2 × 0.98 × 3.2) ≈ 2.5 m/s ลองดูค่า v ในแผงด้านขวา”`);
-    else if (fails >= 3) await say('dad', `“${msg} ช่วงผลัก (F − f)/m × 0.8 ต้องเท่ากับช่วงไถล f/m × 3.2 จึงได้ F = 5 × 39.2 ≈ 196 N”`);
+    if (fails === 2) await say('dad', `“${msg} ใบ้ให้: หลังปล่อยมือ รถต้องไถลต่ออีก 3.2 m และช้าลงด้วย a = f/m = 0.981 m/s² ตอนปล่อยมือจึงควรมีความเร็ว v = √(2 × 0.981 × 3.2) ≈ 2.5 m/s ลองดูค่า v ในแผงด้านขวา”`);
+    else if (fails >= 3) await say('dad', `“${msg} ช่วงผลัก (F − f)/m × 0.8 ต้องเท่ากับช่วงไถล f/m × 3.2 จึงได้ F = 5 × 39.24 ≈ 196 N”`);
     else await say('ryuka', `“${msg}”`, { sad:true });
   }
   showPanel(null);
@@ -1091,13 +1093,13 @@ async function frictionLesson(){
   const a1 = (F - f)/m, v1 = Math.sqrt(2*a1*0.8), a2 = f/m, s2 = v1*v1/(2*a2), tp = v1/a1, tc = v1/a2;
   const D = scene = Diagram(); D.fric = true; D.sad = false;
   board(`<div class="eqMid"><i>f</i> = <i>μN</i> = <i>μmg</i></div>
-    <div class="cap">= 0.10 × 40 × 9.8 = <b>39.2 N</b></div>
+    <div class="cap">= 0.10 × 40 × 9.81 = <b>39.24 N</b></div>
     <div class="small">เกิดจากผิวรถ(?)ไถลถูกับพื้น<br>มีทิศ<b>สวนทางการเคลื่อนที่</b>เสมอ</div>`);
   await say('dad', '“แรงเสียดทานเกิดจากผิวรถ(?)ไถลถูกับพื้น ขนาด f = μN และบนพื้นราบ N = mg จึงได้ f = μmg”');
   board(`<div class="eqMid">แกน x : ${SF('x')} = ?</div>
-    <div class="row on">ช่วงผลัก: ${SF('x')} = <i class="math">F</i> − <i class="math">f</i> = ${F} − 39.2 = <b>${(F - f).toFixed(1)} N</b><br>
+    <div class="row on">ช่วงผลัก: ${SF('x')} = <i class="math">F</i> − <i class="math">f</i> = ${F} − 39.24 = <b>${(F - f).toFixed(2)} N</b><br>
       <span class="math">a</span> = <b>+${a1.toFixed(2)} m/s²</b> → เร็วขึ้น</div>
-    <div class="row on">ปล่อยมือ: ${SF('x')} = −<i class="math">f</i> = <b>−39.2 N</b><br>
+    <div class="row on">ปล่อยมือ: ${SF('x')} = −<i class="math">f</i> = <b>−39.24 N</b><br>
       <span class="math">a</span> = <b>−${a2.toFixed(2)} m/s²</b> → ช้าลง</div>
     <div class="row on">หยุดแล้ว: ไม่ไถลแล้ว แรงเสียดทานจลน์หายไป<br>${SF('x')} = 0 → นิ่งอยู่กับที่</div>`);
   await say('dad', '“ตอนผลัก ต้องออกแรงมากกว่าแรงเสียดทาน แรงลัพธ์ถึงจะชี้ไปข้างหน้า รถจึงเร็วขึ้น”');
@@ -1249,7 +1251,7 @@ async function bonus(){
     fails++;
     const msg = land.err < 0 ? `ตกก่อนถึงธง ${(-land.err).toFixed(2)} m ลองเพิ่มความเร็ว` : `เลยธงไป ${land.err.toFixed(2)} m ลองลดความเร็ว`;
     if (fails >= 2){
-      await say('dad', `${msg} ใบ้ให้: เวลาที่ลอยอยู่กลางอากาศขึ้นกับความสูงอย่างเดียว t = √(2h/g) = √(2×1.9/9.8) ≈ 0.62 s แล้ว D = v·t`);
+      await say('dad', `${msg} ใบ้ให้: เวลาที่ลอยอยู่กลางอากาศขึ้นกับความสูงอย่างเดียว t = √(2h/g) = √(2×1.9/9.81) ≈ 0.62 s แล้ว D = v·t`);
     } else {
       await say('ryuka', `“${msg}… โอ๊ย”`, { sad:true });
     }
@@ -1260,7 +1262,7 @@ async function bonus(){
 
 async function projectileLesson(S){
   setTitle('พาร์ทสอน (แถม)');
-  S.ticksTo = 5; S.ghost = null;
+  S.ticksTo = 3; S.ghost = null;
   S.showPair = true;
   board(`<span class="tag">ตอนรถชนที่กั้น</span>
     <div class="cap">ที่กั้นดันรถ ←&nbsp;&nbsp;&nbsp;→ รถดันที่กั้น</div>
@@ -1276,11 +1278,11 @@ async function projectileLesson(S){
       <tr><td class="up">แกน x</td><td>ΣF<sub>x</sub> = 0</td><td>a<sub>x</sub> = 0</td><td>x = v t</td></tr>
       <tr><td class="up">แกน y</td><td>ΣF<sub>y</sub> = mg</td><td>a<sub>y</sub> = g</td><td>Δy = ½ g t²</td></tr>
     </table>
-    <div class="small">(ไม่คิดแรงต้านอากาศ) จุดบนฉากถ่ายทุก 0.05 s<br>t, x ในตารางนับจากตอนหลุดจากรถ (ขอบแท่น)</div>`);
+    <div class="small">(ไม่คิดแรงต้านอากาศ) จุดบนฉากถ่ายทุก 0.05 s<br>t ในตาราง = เวลาลอย (นับจากตอนหลุดจากขอบแท่น) · x = 0 ที่ขอบแท่น</div>`);
   await say('dad', '“ดูจุดที่ถ่ายไว้ทุก 0.05 วินาที ระยะห่างแนวนอนเท่ากันทุกช่วง เพราะแกน x ไม่มีแรง v<sub>x</sub> เลยคงที่ แต่ระยะแนวดิ่งห่างขึ้นเรื่อยๆ เพราะแรงโน้มถ่วงเร่งให้ตกเร็วขึ้น”');
   await say('dad', '“ริวกะไม่ได้พุ่งตรงไปก่อนแล้วค่อยร่วงแบบในการ์ตูน และก็ไม่ได้ลอยขึ้นด้วย ตอนหลุดจากรถความเร็วแนวดิ่งเป็น 0 จึงเริ่มตกทันที เส้นทางเลยเป็นพาราโบลา”');
   board(`<div class="eqMid">h = ½ g t² &nbsp;→&nbsp; t = √(2h/g)</div>
-    <div class="cap">t = √(2 × 1.9 / 9.8) ≈ <b>0.62 s</b></div>
+    <div class="cap">t = √(2 × 1.9 / 9.81) ≈ <b>0.62 s</b></div>
     <div class="eqMid">D = v t &nbsp;→&nbsp; v = D / t</div>
     <div class="cap">v = 3.0 / 0.62 ≈ <b>4.8 m/s</b></div>
     <div class="small">เวลาลอยขึ้นกับความสูงเท่านั้น ไม่ขึ้นกับความเร็ว</div>`);
