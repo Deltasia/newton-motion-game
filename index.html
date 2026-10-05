@@ -138,7 +138,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
 .btnDark{background:var(--ink);color:#fff;border:none;border-radius:999px;padding:12px 36px;font:inherit;font-size:22px;cursor:pointer}
 #rewind{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;background:rgba(120,90,40,.18);font-size:46px;color:#5a4320;letter-spacing:.05em}
 #rewind span{background:rgba(255,255,255,.85);padding:8px 28px;border-radius:999px}
-#thumb{position:absolute;left:380px;top:110px;font-size:150px;pointer-events:none;animation:pop .5s cubic-bezier(.3,1.6,.5,1) both}
+#thumb{position:absolute;left:290px;top:110px;font-size:150px;pointer-events:none;animation:pop .5s cubic-bezier(.3,1.6,.5,1) both}
 @keyframes pop{from{transform:scale(.2);opacity:0}to{transform:none;opacity:1}}
 #rotate{position:fixed;left:16px;right:16px;bottom:16px;background:var(--ink);color:#fff;border-radius:14px;padding:10px 14px;font-size:14px;text-align:center}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
@@ -849,7 +849,9 @@ function Projectile(){
         text('ที่กั้นดันรถ', ix - 40, iy + 58, { size:14, align:'center' });
       }
       // velocity of Ryuka (14 px per m/s); in flight split into vx (constant) and vy (growing)
-      const K = 14, cx = P(v, r.x), cy = Y(v, r.y) - 0.6*s;
+      // arrows start at Ryuka's belt (0.46 m above the feet), following the sprite's tilt in flight
+      const K = 14, belt = 0.14*s, rot = r.rot || 0;
+      const cx = P(v, r.x) - belt*Math.sin(rot), cy = Y(v, r.y) - 0.6*s + belt*Math.cos(rot);
       if (this.phase === 'ready' || this.phase === 'roll' || this.phase === 'slide'){
         if (this.v > 0){
           velArrow(cx, cy, cx + this.v*K, cy);
