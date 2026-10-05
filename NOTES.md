@@ -18,6 +18,10 @@ Open `index.html` in any browser (sprites are embedded, no server needed).
 | *new* ด่านที่ 1 ท้าทาย | Sandbox: the player sets push force F, total mass m (20–80 kg) and μ (0–0.30) and tries again. Starts at m = 60 kg, μ = 0.15. After the first success, พ่อมัน points out that the right push is always 1.5 × f, because the mass cancels. μ = 0 brings back the "never stops" ice behaviour. |
 | 57 แถม | **Changed to projectile motion**: back on ice, a stopper halts the cart, Ryuka keeps going (1st law) and flies off the ice platform. Slider = cart speed (m/s); land on the cushion at the flag. Then a lesson on the 3rd law at the impact, x = vt / Δy = ½gt², and two quizzes. |
 
+## Velocity and force arrows
+
+Forces are thick arrows (red/amber for pushes and weight, purple for friction); velocity is a thin blue arrow (legend at the top-left of every scene). With friction, the blue velocity arrow keeps pointing forward while the net force points backward, so the cart slows down. In the projectile bonus the slider updates the readouts and Ryuka's velocity arrow live before launch; in flight the arrow splits into vₓ (constant) and v_y (growing), and the previous try stays on screen as faint dots for comparison.
+
 ## Misconceptions in the storyboard and how they were fixed
 
 1. **Frame 55 showed ΣF = 0 while the cart was being pushed (with "แรงผลัก = 123456").**
