@@ -20,7 +20,7 @@ Open `index.html` in any browser (sprites are embedded, no server needed).
 
 ## Velocity and force arrows
 
-Forces are thick arrows (red/amber for pushes and weight, purple for friction); velocity is a thin blue arrow (legend at the top-left of every scene). With friction, the blue velocity arrow keeps pointing forward while the net force points backward, so the cart slows down. Velocity arrows start at the middle of Ryuka's figure. In the projectile bonus the slider updates the readouts and Ryuka's velocity arrow live before launch, and t and x count up in real time from the moment the cart is released (x = 0 at Ryuka's start, matching the floor ticks); in flight the arrow splits into vₓ (constant) and v_y (growing), and the previous try stays on screen as faint dots for comparison.
+Forces are thick arrows (red/amber for pushes and weight, purple for friction); velocity is a thin blue arrow (legend at the top-left of every scene). With friction, the blue velocity arrow keeps pointing forward while the net force points backward, so the cart slows down. In section 1 the velocity arrow starts at the middle of the box; in the projectile bonus it starts at the middle of Ryuka's body. There the slider updates the readouts and Ryuka's velocity arrow live before launch, and t and x count up in real time from the moment the cart is released (x = 0 at Ryuka's start, matching the floor ticks); in flight the arrow splits into vₓ (constant) and v_y (growing), and the previous try stays on screen as faint dots for comparison.
 
 ## Misconceptions in the storyboard and how they were fixed
 

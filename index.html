@@ -440,8 +440,8 @@ function drawFlag(x, gy, s){
 function drawCart(cx, baseY, s, sub){
   const w = 0.8*s, h = 0.7*s;
   rr(cx - w/2, baseY - h, w, h, 0.24*s); ctx.fillStyle = COL.teal; ctx.fill();
-  text('รถ(?)', cx, baseY - h/2 + (sub ? -1 : 7), { size:17, align:'center', color:'rgba(255,255,255,.85)' });
-  if (sub) text(sub, cx, baseY - h/2 + 21, { size:16, align:'center', color:'rgba(255,255,255,.9)', math:true, italic:false });
+  text('รถ(?)', cx, baseY - h + 22, { size:16, align:'center', color:'rgba(255,255,255,.85)' });
+  if (sub) text(sub, cx, baseY - 15, { size:15, align:'center', color:'rgba(255,255,255,.9)', math:true, italic:false });
 }
 function drawRyuka(x, feetY, s, o = {}){
   const img = o.sad ? IMG.sad : IMG.n;
@@ -630,8 +630,8 @@ function Level1(){
         arrow(fx, v.gy - 7, fx - len, v.gy - 7, COL.fric, 7, 16);
         text(`f = ${fNow.toFixed(1)} N`, fx - len - 8, v.gy - 2, { size:16, align:'right', halo:true, color:COL.fric, math:true, italic:false });
       }
-      if (c.v > 0.005 && c.x < 9.2){                        // velocity: thin blue arrow from the middle of Ryuka
-        const fx = P(v, r.x), len = Math.min(220, c.v*40), vy = Y(v, r.y + 0.6);
+      if (c.v > 0.005 && c.x < 9.2){                        // velocity: thin blue arrow from the middle of the box
+        const fx = P(v, c.x), len = Math.min(220, c.v*40), vy = Y(v, 0.35);
         velArrow(fx, vy, fx + len, vy);
         text(`v = ${c.v.toFixed(2)} m/s`, fx + len + 8, vy + 6, { size:16, halo:true, color:COL.vel, math:true, italic:false });
       }
@@ -660,7 +660,7 @@ function Moving(vel){
       }
       drawCart(this.cx, v.gy, v.s);
       drawRyuka(this.cx, v.gy - 0.7*v.s, v.s, { sad:this.sad });
-      const len = Math.min(220, this.v*40), vy = v.gy - 1.3*v.s;
+      const len = Math.min(220, this.v*40), vy = v.gy - 0.35*v.s;
       velArrow(this.cx, vy, this.cx + len, vy);
       drawLegend();
       text('ยังขยับอยู่ >>', this.cx - 75, v.gy - 0.7*v.s - 70, { size:26, align:'right', halo:true });
@@ -707,7 +707,7 @@ function PushDemo(F){
       drawCart(cx, v.gy, v.s);
       drawRyuka(cx, v.gy - 0.7*v.s, v.s, { sad:true });
       if (this.ph === 'push') arrow(cx - 0.4*v.s - 110, v.gy - 0.35*v.s, cx - 0.4*v.s - 6, v.gy - 0.35*v.s, COL.red, 12, 26);
-      if (this.v > 0.005) velArrow(cx, v.gy - 1.3*v.s, cx + Math.min(220, this.v*40), v.gy - 1.3*v.s);
+      if (this.v > 0.005) velArrow(cx, v.gy - 0.35*v.s, cx + Math.min(220, this.v*40), v.gy - 0.35*v.s);
       drawLegend();
       text(this.ph === 'push' ? 'กำลังผลัก' : this.ph === 'coast' ? 'มือหลุดแล้ว' : '',
            70, 120, { size:24 });
