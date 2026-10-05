@@ -60,6 +60,7 @@ body{background:var(--backdrop);color:var(--ink);font-family:var(--f-ui);overflo
 #readout{width:100%;display:grid;grid-template-columns:auto 1fr;gap:0 10px;font-size:16px;line-height:1.35;background:rgba(255,255,255,.55);border-radius:16px;padding:8px 14px;font-variant-numeric:tabular-nums}
 #readout dt{font-family:var(--f-math);font-style:italic}
 #readout dd{margin:0;text-align:right;font-family:var(--f-math)}
+.roCap{align-self:flex-start;font-size:14px;color:var(--slate-ink);margin-bottom:-4px}
 #graph{width:300px;height:84px;flex:none;background:#fff;border-radius:12px}
 #playBtn{margin-top:auto}
 .btnWhite{background:#fff;border:none;border-radius:999px;padding:8px 34px;flex:none;font:inherit;font-size:24px;cursor:pointer;color:var(--ink);transition:transform .12s}
@@ -153,6 +154,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
       <div class="pill">ตั้งค่าพารามิเตอร์</div>
       <div id="params" class="params"></div>
       <div id="info"></div>
+      <div id="roCap" class="roCap" hidden></div>
       <dl id="readout"></dl>
       <canvas id="graph" width="600" height="168" aria-label="กราฟความเร็วกับเวลา"></canvas>
       <button id="playBtn" class="btnWhite">ผลัก/เล่น</button>
@@ -338,6 +340,8 @@ function updateReadout(){
   if (!scene || !scene.readout) return;
   const vals = scene.readout();
   vals.forEach((v, i) => { const el = $('ro'+i); if (el) el.textContent = v == null ? '–' : `${v} ${readRows[i][1]}`.trim(); });
+  const note = scene.readoutNote ? scene.readoutNote() : null, cap = $('roCap');
+  cap.hidden = !note; if (note) cap.textContent = note;
   if (MODES[panelMode] && MODES[panelMode].graph && scene.hist) drawGraph(scene.hist);
 }
 function drawGraph(hist){
@@ -726,6 +730,7 @@ function Projectile(){
       this.dots = []; this.ft = 0; this.land = null; this.bubble = null; this.pairT = 9; this.flags = {}; this.timeScale = 1;
     },
     tFlight(){ return Math.sqrt(2*this.hLaunch/G); },
+    readoutNote(){ return this.phase === 'ready' && this.v > 0 ? 'ค่าที่คาดว่าจะได้ตอนตกถึงพื้น' : null; },
     start(v){
       const prev = this.dots.length ? this.dots : this.ghost;
       this.reset(); this.ghost = prev;
@@ -786,6 +791,11 @@ function Projectile(){
     readout(){
       // t and x run from the moment the cart is released (Ryuka's start = 0); Δy and vy start at the edge
       if (this.phase === 'rewind') return [null, null, null, null, null];
+      if (this.phase === 'ready' && this.v > 0){            // while the slider moves: predicted values at touchdown
+        const tl = this.tFlight();
+        return [ ((this.edge - 0.2)/this.v + tl).toFixed(2), (this.edge - 0.2 + this.v*tl).toFixed(2),
+                 this.hLaunch.toFixed(2), this.v.toFixed(2), (-G*tl).toFixed(2) ];
+      }
       const x0 = 0.2, inAir = this.phase === 'fly' || this.phase === 'landed';
       const ft = inAir ? this.ft : 0;
       const moving = this.phase !== 'ready' && this.phase !== 'still';
