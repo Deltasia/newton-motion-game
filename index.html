@@ -178,10 +178,6 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
 </div>
 
 <script>
-window.MathJax = { tex:{ inlineMath:[['\\(', '\\)']] }, svg:{ fontCache:'global' }, startup:{ typeset:false } };
-</script>
-<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js"></script>
-<script>
 'use strict';
 const W = 1280, H = 720, G = 9.81;
 const $ = id => document.getElementById(id);
@@ -233,7 +229,6 @@ function say(who, html, o = {}){
   renderSpeaker(who, o);
   const t = $('dtext');
   t.innerHTML = html;
-  if (html.includes('\\(') && window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([t]).catch(() => {});
   t.classList.remove('in'); void t.offsetWidth; t.classList.add('in');
   const ch = $('choices'); ch.innerHTML = '';
   $('next').hidden = true; advance = null;
@@ -1183,7 +1178,7 @@ async function sandbox(){
       wins++; fails = 0;
       await celebrate(`“จอดได้! m = ${p.m} kg, μ = ${p.mu.toFixed(2)} ได้ f = ${f.toFixed(1)} N ส่วนแรงผลัก ${p.F} N ≈ ${(p.F/f).toFixed(2)} เท่าของ f”`);
       if (wins === 1){
-        await say('dad', '“สังเกตมั้ย แรงผลักที่พอดีจะประมาณ <b>5 เท่าของ \\(f\\)</b> เสมอ เพราะ \\(\\frac{F-f}{m}\\times 0.8=\\frac{f}{m}\\times 3.2\\) ตัด \\(m\\) ออกได้ เหลือ \\(F=5f\\)”');
+        await say('dad', '“สังเกตมั้ย แรงผลักที่พอดีจะประมาณ <b>5 เท่าของ <i class="math">f</i></b> เสมอ เพราะ <span class="math">(F − f)/m × 0.8 = f/m × 3.2</span> ตัด <i class="math">m</i> ออกได้ เหลือ <span class="math">F = 5f</span>”');
         await say('dad', '“มวลมากขึ้นหรือพื้นฝืดขึ้น แรงเสียดทาน f = μmg ก็มากขึ้น เลยต้องผลักแรงขึ้นตามไปด้วย”');
       }
       const pick = await say('dad', 'จะลองค่าอื่นอีก หรือไปต่อ?', { choices:['ลองค่าอื่นอีก', 'ไปด่านแถม'] });
