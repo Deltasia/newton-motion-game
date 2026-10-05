@@ -486,7 +486,6 @@ function fbd(cx, cy, o = {}){
 }
 function velArrow(x1, y1, x2, y2, color = COL.vel, w = 5, head = 15){
   if (Math.hypot(x2 - x1, y2 - y1) < 3) return;
-  arrow(x1, y1, x2, y2, '#fff', w + 4, head + 4);
   arrow(x1, y1, x2, y2, color, w, head);
 }
 function subLabel(main, sub, x, y, o = {}){
