@@ -653,7 +653,13 @@ function Level1(){
         text('v', Math.max(fx + len, P(v, c.x + 0.4)) + 6, vy + 6, { size:18, color:COL.vel, math:true });
       }
       drawLegend();
-      if (this.bubble && c.x < 6.4) bubble(this.bubble, P(v, r.x) - 30, Y(v, r.y + 1.35), { size:26 });
+      // the bubble follows Ryuka, stops at the panel's edge, and disappears once she is fully behind the panel
+      const panelLeft = $('panel').hidden ? W : $('panel').offsetLeft;
+      if (this.bubble && P(v, r.x) - 50 < panelLeft){
+        ctx.font = `400 26px ${FONT}`;
+        const bw = ctx.measureText(this.bubble).width;
+        bubble(this.bubble, Math.min(P(v, r.x) - 30, panelLeft - 10 - bw), Y(v, r.y + 1.35), { size:26 });
+      }
       if (this.timeScale > 1) text(`เร่งเวลา ×${this.timeScale.toFixed(1)}`, 24, 108, { size:17, color:COL.muted });
     }
   };
