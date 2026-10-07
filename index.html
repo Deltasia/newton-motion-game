@@ -148,15 +148,15 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
 #overlay .links{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;font-size:17px;color:var(--slate-ink)}
 #overlay .links button{background:none;border:1px solid var(--slate);border-radius:999px;padding:5px 16px;font:inherit;cursor:pointer;color:var(--ink)}
 /* title screen: heading at the top, the cast on the ice, then the chapter list */
-#overlay.ts{justify-content:flex-start;gap:0;padding:38px 40px 24px}
+#overlay.ts{justify-content:flex-start;gap:0;padding:24px 40px 16px}
 #overlay.ts h1{font-size:64px;line-height:1.15}
 #overlay.ts h2{margin-top:6px}
-.cast{display:grid;grid-template-columns:repeat(3,auto);column-gap:84px;align-items:end;justify-items:center;margin-top:20px}
+.cast{display:grid;grid-template-columns:repeat(3,auto);column-gap:84px;align-items:end;justify-items:center;margin-top:12px}
 .cast img{display:block}
 .onBox{display:flex;flex-direction:column;align-items:center}
-.castBox{width:106px;height:92px;background:var(--teal);border-radius:26px;display:grid;place-items:center;color:rgba(255,255,255,.88);font-size:17px}
+.castBox{width:86px;height:74px;background:var(--teal);border-radius:22px;display:grid;place-items:center;color:rgba(255,255,255,.88);font-size:17px}
 .cast .ice{grid-column:1/-1;justify-self:stretch;height:20px;margin:0 -70px;background:#E4F0F4;border-top:2px solid #9EC3CF}
-.cast .who{font-size:19px;margin-top:6px}
+.cast .castName{font-size:18px;margin-top:4px}
 .ts .btnDark{margin-top:18px}
 .chapters{margin-top:16px;display:flex;flex-direction:column;align-items:center;gap:8px}
 .chapters .lbl{font-size:16px;color:var(--slate-ink)}
@@ -166,6 +166,31 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
 .sumGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:1180px;text-align:left}
 .sumGrid .law{font-size:17px;padding:12px 16px}
 .btnDark{background:var(--ink);color:#fff;border:none;border-radius:999px;padding:12px 36px;font:inherit;font-size:22px;cursor:pointer}
+.btnGhost{background:none;color:var(--ink);border:2px solid var(--slate);border-radius:999px;padding:10px 30px;font:inherit;font-size:21px;cursor:pointer}
+.startRow{display:flex;gap:14px;align-items:center;justify-content:center}
+/* who is playing (name + class) */
+.who{display:flex;gap:18px;align-items:center;font-size:20px}
+.who label{display:flex;gap:8px;align-items:center}
+.who input{font:inherit;font-size:20px;width:320px;padding:6px 14px;border:2px solid var(--slate);border-radius:12px;color:var(--ink);background:#fff}
+.who input#whoRoom{width:150px}
+.who input:focus-visible{outline:none;border-color:var(--ink)}
+.who input.err{border-color:var(--bad);background:#FBE7E7}
+.whoHint{font-size:16px;color:var(--bad);min-height:1.2em;margin-top:-10px}
+.ts .who{margin-top:16px}
+.ts .whoHint{margin-top:4px}
+.ts .startRow{margin-top:4px}
+.ts .startRow .btnDark{margin-top:0}
+/* end-of-game feedback */
+.fb{display:flex;flex-direction:column;gap:16px;width:900px;text-align:left;font-size:21px}
+.fbRow{display:grid;grid-template-columns:220px 1fr;align-items:center;gap:4px 16px}
+.fbRow small{grid-column:2;font-size:14px;color:var(--slate-ink)}
+.scale{display:flex;gap:8px;flex-wrap:wrap}
+.scale button{min-width:56px;background:#F3F5F8;border:2px solid transparent;border-radius:12px;padding:6px 14px;font:inherit;font-size:18px;cursor:pointer;color:var(--ink)}
+.scale button:hover{border-color:var(--slate)}
+.scale button[aria-pressed="true"]{background:#EEF4F3;border-color:var(--teal);font-weight:600}
+.scale[data-k="hardest"] button{font-size:16px;padding:5px 12px}
+#fbQ{font:inherit;font-size:18px;width:100%;height:80px;resize:none;border:2px solid var(--slate);border-radius:14px;padding:8px 14px;color:var(--ink)}
+#fbQ:focus-visible{outline:none;border-color:var(--ink)}
 #rewind{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;background:rgba(120,90,40,.18);font-size:46px;color:#5a4320;letter-spacing:.05em}
 #rewind span{background:rgba(255,255,255,.85);padding:8px 28px;border-radius:999px}
 #thumb{position:absolute;left:720px;top:104px;font-size:120px;line-height:1;pointer-events:none;animation:pop .5s cubic-bezier(.3,1.6,.5,1) both}
@@ -287,6 +312,185 @@ function waitEvent(n){ return new Promise(r => (waiters[n] = waiters[n] || []).p
 function waitAny(names){ return Promise.race(names.map(n => waitEvent(n).then(d => ({ name:n, data:d })))); }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+/* ---------- student data → the teacher's Google Sheet (setup: README) ---------- */
+// Paste the Apps Script web-app URL here. Left empty, the data only queues up in this browser.
+const LOG_URL = 'https://script.google.com/macros/s/AKfycbxDnyx-9wpMEEpesY8zs_53YMNpjygU8WM67A9VI1xC5LX4ZSM-CSUsiMRm7YJfKr91/exec';
+const IDLE_MS = 60000;                 // no click/key/touch for this long = idle, not counted as active time
+const FULL_RUN = ['ch1', 'lesson', 'fric', 'fricLesson', 'sandbox', 'bonus', 'end'];
+// formal part names: the chapter list, the เล่นต่อ button, the feedback form and the sheet all use these
+const PART_NAME = { ch1:'ด่านที่ 1 : กฎข้อที่ 1 ของนิวตัน', lesson:'บทเรียน : แรงลัพธ์และความเฉื่อย',
+  fric:'ด่านที่ 1 (รอบที่ 2) : แรงเสียดทาน', fricLesson:'บทเรียน : แรงเสียดทาน',
+  sandbox:'ด่านที่ 1 (ท้าทาย) : มวลและสัมประสิทธิ์ความเสียดทาน', bonus:'ด่านพิเศษ : การเคลื่อนที่แบบโพรเจกไทล์',
+  projLesson:'บทเรียน : การเคลื่อนที่แบบโพรเจกไทล์', end:'สรุป' };
+const store = {                        // localStorage can throw (private mode, blocked storage): never let it break the game
+  get(k, d){ try { const v = localStorage.getItem('nmg.' + k); return v == null ? d : JSON.parse(v); } catch (e){ return d; } },
+  set(k, v){ try { if (v == null) localStorage.removeItem('nmg.' + k); else localStorage.setItem('nmg.' + k, JSON.stringify(v)); } catch (e){} }
+};
+const uid = () => (window.crypto && crypto.randomUUID) ? crypto.randomUUID()
+  : Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12);
+const r2 = x => Math.round(x*100)/100;
+const plain = html => html.replace(/<[^>]*>/g, '').replace(/\\[()]/g, '').replace(/&thinsp;|&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+
+const track = {
+  deviceId: store.get('device', null),
+  student: store.get('student', null),           // { name, room }
+  sessionId: uid(), session: null, sec: null, visited: [], feedbackDone: false,
+  outbox: store.get('outbox', []), sending: false,
+  activeMs: 0, clockAt: performance.now(), lastInput: performance.now(), vis: document.visibilityState === 'visible',
+  panelAt: performance.now(), moves: 0, typed: false, armed: null, lastInputs: {},
+
+  /* active-time clock: counts only while the tab is visible and someone touched it in the last minute */
+  tick(){
+    const now = performance.now(), dt = Math.min(now - this.clockAt, 5000);
+    this.clockAt = now;
+    if (!this.vis) return;
+    const on = now - this.lastInput < IDLE_MS;
+    if (on) this.activeMs += dt;
+    if (this.sec) this.sec[on ? 'active' : 'idle'] += dt;
+  },
+
+  /* events */
+  ev(type, data){
+    const s = this.student || {};
+    return Object.assign({ type, eid:uid(), ts:new Date().toISOString(), sessionId:this.sessionId,
+      name:s.name || '', room:s.room || '' }, data);
+  },
+  queue(e){
+    this.outbox.push(e);
+    if (this.outbox.length > 3000) this.outbox.splice(0, this.outbox.length - 3000);
+    store.set('outbox', this.outbox);
+    clearTimeout(this.flushT); this.flushT = setTimeout(() => this.flush(), 1500);
+  },
+  push(type, data){ this.queue(this.ev(type, data)); },
+  flush(beacon){
+    if (!LOG_URL || !this.outbox.length) return;
+    if (!beacon && (this.sending || navigator.onLine === false)) return;
+    const batch = this.outbox.slice(0, 100), ids = new Set(batch.map(e => e.eid));
+    const body = JSON.stringify({ events:batch });
+    const done = () => { this.outbox = this.outbox.filter(e => !ids.has(e.eid)); store.set('outbox', this.outbox); };
+    if (beacon){
+      try { if (navigator.sendBeacon && navigator.sendBeacon(LOG_URL, new Blob([body], { type:'text/plain;charset=utf-8' }))) done(); } catch (e){}
+      return;
+    }
+    this.sending = true;
+    fetch(LOG_URL, { method:'POST', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body })
+      .then(r => r.json())
+      .then(j => { this.sending = false; if (j && j.ok){ done(); if (this.outbox.length) this.flush(); } })
+      .catch(() => { this.sending = false; });          // stays queued; retried later
+  },
+
+  /* sessions and sections (= where the time goes) */
+  sessionRow(){
+    const s = this.session;
+    return { deviceId:this.deviceId, startedAt:s.startedAt, entry:s.entry, runs:s.runs, lastStep:s.lastStep,
+      furthest:s.furthest, reachedEnd:s.reachedEnd, activeMin:r2(this.activeMs/60000),
+      device:`${matchMedia('(pointer:coarse)').matches ? 'touch' : 'mouse'} ${screen.width}×${screen.height}` };
+  },
+  begin(entry){
+    if (!this.deviceId){ this.deviceId = uid(); store.set('device', this.deviceId); }
+    if (!this.session) this.session = { startedAt:new Date().toISOString(), entry, runs:0, lastStep:'', furthest:'', reachedEnd:false };
+    this.session.runs++;
+    this.push('session', this.sessionRow());
+  },
+  enter(name){
+    this.leave(true);
+    this.sec = { name, eid:uid(), enteredAt:new Date().toISOString(), active:0, idle:0, lines:[], line:null, attempts:0, hints:0 };
+    if (!this.visited.includes(name)) this.visited.push(name);
+    const order = Object.keys(PART_NAME), s = this.session;
+    s.lastStep = name;
+    if (order.indexOf(name) > order.indexOf(s.furthest)) s.furthest = name;
+    if (name === 'end') s.reachedEnd = true;
+  },
+  sectionEv(completed, partial){
+    const s = this.sec, lines = s.lines.concat(s.line ? [[s.active - s.line.at, s.line.text]] : []);
+    const slow = lines.slice().sort((a, b) => b[0] - a[0]).slice(0, 3);
+    return this.ev('section', { eid:s.eid + (partial ? '-p' : ''), section:s.name, part:PART_NAME[s.name], enteredAt:s.enteredAt,
+      activeSec:Math.round(s.active/1000), idleSec:Math.round(s.idle/1000), completed:!!completed, partial:!!partial,
+      lines:lines.length, slowLines:slow.map(([ms, t]) => `${Math.round(ms/1000)} s: ${t}`).join(' | ') });
+  },
+  leave(completed, partial){
+    if (!this.sec) return;
+    this.tick();
+    this.queue(this.sectionEv(completed, partial));
+    this.sec = null;
+    store.set('open', null);
+    this.push('session', this.sessionRow());
+  },
+  // the page may be killed while hidden without a pagehide: keep the open section so the next load can report it
+  snapshot(){
+    if (this.sec) store.set('open', [this.sectionEv(false, true), this.ev('session', this.sessionRow())]);
+  },
+  // dialogue lines the student has to click through: how long each one stayed on screen
+  line(html){
+    const s = this.sec; if (!s) return;
+    this.tick();
+    if (s.line) s.lines.push([s.active - s.line.at, s.line.text]);
+    s.line = html == null ? null : { at:s.active, text:plain(html).slice(0, 60) };
+  },
+
+  /* level attempts + how the student picked the value (drag around vs. type an exact number) */
+  arm(){ this.panelAt = performance.now(); this.moves = 0; this.typed = false; },
+  onPlay(){ this.armed = { thinkSec:Math.round((performance.now() - this.panelAt)/100)/10, moves:this.moves, typed:this.typed }; },
+  attempt(inputs, outcome, err){
+    const s = this.sec; if (!s) return;
+    s.attempts++;
+    const a = this.armed || {}, prev = this.lastInputs[s.name];
+    const change = !prev ? '' : Object.keys(inputs).map(k => {
+      const d = r2(inputs[k] - prev[k]);
+      return d ? `${k} ${d > 0 ? '+' : ''}${d}` : '';
+    }).filter(Boolean).join(', ') || 'same';
+    this.lastInputs[s.name] = inputs;
+    this.push('attempt', { section:s.name, attemptNo:s.attempts, F:inputs.F, m:inputs.m, mu:inputs.mu, v:inputs.v,
+      outcome, errM:err == null ? '' : r2(err), thinkSec:a.thinkSec, sliderMoves:a.moves, typedExact:a.typed,
+      change, hintsBefore:s.hints });
+    this.armed = null;
+  },
+  hint(){ if (this.sec) this.sec.hints++; },
+  choice(question, pick){
+    this.push('choice', { section:this.sec ? this.sec.name : '', question:plain(question).slice(0, 80), pick,
+      afterAttempts:this.sec ? this.sec.attempts : '' });
+  },
+  quiz(id, picks, correct, tags, msFirst, msTotal){
+    this.push('quiz', { section:this.sec ? this.sec.name : '', quizId:id, firstTryCorrect:picks[0] === correct, tries:picks.length,
+      picks:picks.map(i => 'กขคง'[i]).join(' → '), wrongTags:picks.filter(i => i !== correct).map(i => tags[i]).join(', '),
+      secToFirstPick:Math.round(msFirst/100)/10, secTotal:Math.round(msTotal/100)/10 });
+  },
+  feedback(ans){ this.feedbackDone = true; this.push('feedback', ans); },
+
+  /* where to continue next time (per student, in this browser) */
+  progressOf(st){ return st ? store.get('progress', {})[`${st.room}|${st.name}`] || null : null; },
+  saveProgress(next){
+    const all = store.get('progress', {});
+    all[`${this.student.room}|${this.student.name}`] = { next, memo:{ F:memo.F, v1:memo.v1, fric:memo.fric } };
+    store.set('progress', all);
+  }
+};
+const stopOutcome = r => r.name === 'gone' ? 'gone' : r.data.ok ? 'success' : r.data.err < 0 ? 'short' : 'long';
+
+(() => {
+  const open = store.get('open', null);        // a section left open by a page that was closed while hidden
+  if (open){ open.forEach(e => track.queue(e)); store.set('open', null); }
+  ['pointerdown', 'pointermove', 'keydown', 'wheel', 'touchstart'].forEach(t =>
+    addEventListener(t, () => { track.lastInput = performance.now(); }, { passive:true, capture:true }));
+  setInterval(() => track.tick(), 1000);
+  setInterval(() => track.flush(), 30000);
+  addEventListener('online', () => track.flush());
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible'){ track.vis = true; track.clockAt = performance.now(); return; }
+    track.tick(); track.vis = false;
+    track.snapshot(); track.flush(true);
+  });
+  addEventListener('pagehide', () => {
+    if (track.sec){ track.reopen = track.sec.name; track.leave(false, true); }
+    track.flush(true);
+  });
+  addEventListener('pageshow', e => {           // back from the bfcache: keep timing the same part
+    if (e.persisted && track.reopen && track.session){ track.enter(track.reopen); track.reopen = null; }
+  });
+  track.flush();
+})();
+
+
 /* ---------- dialogue ---------- */
 let advance = null;
 function renderSpeaker(p, who, o = {}){
@@ -300,6 +504,7 @@ function fillText(t, html){
   t.classList.remove('in'); void t.offsetWidth; t.classList.add('in');
 }
 function say(who, html, o = {}){
+  track.line(o.wait === false && !o.choices ? null : html);   // prompts left up while playing aren't reading time
   $('dialog').hidden = false;
   renderSpeaker($('portrait'), who, o);
   fillText($('dtext'), html);
@@ -312,7 +517,7 @@ function say(who, html, o = {}){
     return new Promise(res => o.choices.forEach((c, i) => {
       const b = document.createElement('button');
       b.className = 'choice'; b.textContent = c;
-      b.onclick = e => { e.stopPropagation(); ch.innerHTML = ''; line.picked = i; res(i); };
+      b.onclick = e => { e.stopPropagation(); ch.innerHTML = ''; line.picked = i; track.choice(html, c); res(i); };
       ch.append(b);
     }));
   }
@@ -322,7 +527,7 @@ function say(who, html, o = {}){
 }
 $('dialog').addEventListener('click', () => advance && advance());
 addEventListener('keydown', e => {
-  const a = document.activeElement;
+  const a = document.activeElement, typing = a && (a.matches('input, textarea, select') || a.isContentEditable);
   if (reading != null){
     if ((e.key === 'Enter' || e.key === ' ') && a && a.tagName === 'BUTTON' && $('hist').contains(a)) return;
     if (['Enter', ' ', 'ArrowRight', 'PageDown'].includes(e.key)){ e.preventDefault(); stepForward(); }
@@ -330,9 +535,9 @@ addEventListener('keydown', e => {
     else if (e.key === 'Escape'){ e.preventDefault(); stopReading(); }
     return;
   }
-  if ((e.key === 'ArrowLeft' || e.key === 'PageUp') && !(a && a.tagName === 'INPUT')){ e.preventDefault(); stepBack(); return; }
+  if ((e.key === 'ArrowLeft' || e.key === 'PageUp') && !typing){ e.preventDefault(); stepBack(); return; }
   if ((e.key === 'Enter' || e.key === ' ') && advance){
-    if (a && (a.tagName === 'BUTTON' || a.tagName === 'INPUT') && a.id !== 'next') return;
+    if (typing || (a && a.tagName === 'BUTTON' && a.id !== 'next')) return;
     e.preventDefault(); advance();
   }
 });
@@ -372,6 +577,7 @@ function logLine(line){
 }
 function clearLines(){ stopReading(); lines = []; $('backBtn').hidden = true; }
 function showLine(i){
+  if (reading == null && track.sec){ track.tick(); track.readFrom = track.sec.active; }
   reading = i;
   const l = lines[i], hb = $('hboard'), hp = $('hpanel');
   $('hist').hidden = false;
@@ -397,6 +603,12 @@ function showLine(i){
 function stopReading(){
   if (reading == null) return;
   reading = null;
+  const s = track.sec;
+  if (s && track.readFrom != null){
+    track.tick();
+    if (s.line) s.line.at = Math.min(s.active, s.line.at + s.active - track.readFrom);
+  }
+  track.readFrom = null;
   $('hist').hidden = true;
   stage.classList.remove('reading');
   if (!$('next').hidden) $('next').focus({ preventScroll:true });
@@ -497,7 +709,8 @@ function showPanel(mode, init = {}){
       if (scene && scene.onParam) scene.onParam(pval);
     };
     r.addEventListener('input', () => set(+r.value, 'r'));
-    n.addEventListener('change', () => set(parseFloat(n.value)));
+    r.addEventListener('change', () => { track.moves++; });                  // once per drag / key press
+    n.addEventListener('change', () => { track.moves++; track.typed = true; set(parseFloat(n.value)); });
     n.addEventListener('input', () => {                    // live while typing, without rewriting the box
       const val = parseFloat(n.value);
       if (isFinite(val) && val >= min && val <= max){
@@ -513,8 +726,11 @@ function showPanel(mode, init = {}){
   readRows = M.rows;
   $('readout').innerHTML = readRows.map((r, i) => `<dt><span class="th">${r[0]}</span><i>${r[1]}</i></dt><dd id="ro${i}">–</dd>`).join('');
 }
-function lockPanel(on){ $('panel').querySelectorAll('input,#playBtn').forEach(el => el.disabled = on); }
-$('playBtn').addEventListener('click', () => emit('play', { ...pval }));
+function lockPanel(on){
+  $('panel').querySelectorAll('input,#playBtn').forEach(el => el.disabled = on);
+  if (!on) track.arm();
+}
+$('playBtn').addEventListener('click', () => { track.onPlay(); emit('play', { ...pval }); });
 function updateReadout(){
   if (!scene || !scene.readout) return;
   const vals = scene.readout();
@@ -1212,6 +1428,7 @@ async function chapter1(){
     L.start({ F, m:40, mu:0 });
     if (F === 0){
       await waitEvent('nomove');
+      track.attempt({ F, m:40, mu:0 }, 'nomove');
       await say('ryuka', '“ไม่ผลักเลยมันก็นิ่งอยู่อย่างนั้นแหละ ออกแรงหน่อยสิ”');
       L.reset(); continue;
     }
@@ -1219,6 +1436,7 @@ async function chapter1(){
     if (F < 0){                                   // pushed the wrong way: it still never stops, just on the other side
       say('ryuka', '“เดี๋ยวๆ ธงอยู่ทางขวานะ! ทำไมผลักไปทางซ้ายล่ะ”', { wait:false });
       await waitEvent('gone');
+      track.attempt({ F, m:40, mu:0 }, 'wrong-way');
       await say('ryuka', '“แล้วก็ไม่หยุดอีก ไถลไปทางซ้ายเรื่อยๆ เลย อ้ากกก”', { panic:true });
       if (!toldBack){
         toldBack = true;
@@ -1231,6 +1449,7 @@ async function chapter1(){
     say('ryuka', '“แค่นี้น่าจะพอให้ไปจอดหน้าธงแล้ว หยุดผลักได้เลย”', { wait:false });
     await waitEvent('passFlag');
     await waitEvent('gone');
+    track.attempt({ F, m:40, mu:0 }, 'gone');
     tries++;
     await say('ryuka', '“อะไรนะ หยุดผลักแล้วหรอ แต่ทำไมมันไม่หยุดอ่ะ อ้ากกก”', { panic:true });
     if (tries >= 2){
@@ -1300,7 +1519,7 @@ async function lesson(){
   await say('ryuka', '“แต่รถเข็นที่ซูเปอร์ฯ ปล่อยมือแล้วมันก็หยุดเองนี่นา !?”');
   await say('yuan', '“นั่นเพราะพื้นมี<b>แรงเสียดทาน</b>มาต้าน ซึ่งก็เป็นแรงภายนอกเหมือนกัน ΣF เลยไม่เป็น 0 แต่ลานนี้เป็นน้ำแข็ง แรงเสียดทานแทบเป็นศูนย์ เลยไม่มีอะไรมาหยุดกล่องเลย”');
 
-  await quiz(
+  await quiz('q1-inertia',
     'หลังจากมือหลุดจากกล่อง บนลานน้ำแข็ง (ไม่มีแรงเสียดทาน) ข้อใดถูกต้อง ?',
     ['กล่องค่อยๆ ช้าลง เพราะแรงผลักที่ติดอยู่ในกล่องค่อยๆ หมดไป',
      'กล่องเคลื่อนที่ด้วยความเร็วคงที่ เพราะแรงลัพธ์เป็นศูนย์',
@@ -1311,7 +1530,8 @@ async function lesson(){
     ['แรงไม่ได้ติดอยู่ในกล่อง มันหายไปทันทีที่มือหลุด และถ้าไม่มีแรงต้าน ความเร็วก็ไม่ลดลง ลองใหม่นะ',
      '',
      'ไม่มีแรงผลักแปลว่าความเร็ว “ไม่เปลี่ยน” ไม่ได้แปลว่าหยุด ถ้าจะหยุดต้องมีแรงมาต้าน ลองใหม่นะ',
-     'ความเร่งมีได้เฉพาะตอนที่มีแรงลัพธ์ (a = ΣF/m) พอ ΣF = 0 ความเร่งก็เป็น 0 ทันที ลองใหม่นะ']
+     'ความเร่งมีได้เฉพาะตอนที่มีแรงลัพธ์ (a = ΣF/m) พอ ΣF = 0 ความเร่งก็เป็น 0 ทันที ลองใหม่นะ'],
+    ['force-stored-in-object', '', 'no-force-means-stop', 'acceleration-lingers']
   );
   board(null);
 }
@@ -1352,12 +1572,15 @@ async function frictionLevel(){
     lockPanel(true);
     L.start({ F, m:40, mu:0.1 });
     if (F < 0){
-      await (-F <= L.f() ? waitEvent('nomove') : waitAny(['stopped', 'gone']));
+      const held = -F <= L.f();
+      await (held ? waitEvent('nomove') : waitAny(['stopped', 'gone']));
+      track.attempt({ F, m:40, mu:0.1 }, held ? 'nomove' : 'wrong-way');
       await wrongWay(F, L.f(), !wrongs++);
       L.reset(); continue;
     }
     if (F <= L.f()){
       await waitEvent('nomove');
+      track.attempt({ F, m:40, mu:0.1 }, 'nomove');
       if (F === 0) await say('ryuka', '“ไม่ผลักเลย ก็ไม่ขยับสิ”');
       else {
         await say('ryuka', `“ผลักตั้ง ${F} N แต่กล่องไม่ขยับเลย!”`);
@@ -1366,6 +1589,7 @@ async function frictionLevel(){
       L.reset(); continue;
     }
     const r = await waitAny(['stopped', 'gone']);
+    track.attempt({ F, m:40, mu:0.1 }, stopOutcome(r), r.name === 'stopped' ? r.data.err : null);
     if (r.name === 'stopped' && r.data.ok){
       memo.fric = { F };
       await celebrate(`“เยี่ยม! ผลัก ${F} N กล่องค่อยๆ ช้าลงแล้วจอดคลาดจากจุดจอดแค่ ${Math.abs(r.data.err).toFixed(2)} m”`);
@@ -1375,6 +1599,7 @@ async function frictionLevel(){
     const msg = r.name === 'gone' ? 'ไถลเลยธงไปไกลมาก ลองลดแรงผลัก'
       : r.data.err < 0 ? `จอดก่อนถึงจุดจอด ${(-r.data.err).toFixed(2)} m ลองเพิ่มแรงผลัก`
       : `จอดเลยจุดจอดไป ${r.data.err.toFixed(2)} m ลองลดแรงผลัก`;
+    if (fails >= 2) track.hint();
     if (fails === 2) await say('yuan', `“${msg} ใบ้ให้: หลังปล่อยมือ กล่องต้องไถลต่ออีก 3.2 m และช้าลงด้วย a = f/m = 0.981 m/s² ตอนปล่อยมือจึงควรมีความเร็ว v = √(2 × 0.981 × 3.2) ≈ 2.5 m/s ลองดูค่า v ในแผงด้านขวา”`);
     else if (fails >= 3) await say('yuan', `“${msg} ช่วงผลัก (F − f)/m × 0.8 ต้องเท่ากับช่วงไถล f/m × 3.2 จึงได้ F = 5 × 39.24 ≈ 196 N”`);
     else await say('ryuka', `“${msg}”`);
@@ -1421,7 +1646,7 @@ async function frictionLesson(){
     <div class="row on">ช่วงไถล: <span class="math">0 = v² − 2(${a2.toFixed(2)})s</span><br>→ <span class="math">s</span> = <b>${s2.toFixed(2)} m</b></div>
     <div class="cap">รวม 0.8 + ${s2.toFixed(2)} = <b>${(0.8 + s2).toFixed(2)} m</b><br><span class="small">(จุดจอดอยู่ห่างจุดเริ่ม 4.0 m)</span></div>`);
   await say('yuan', '“ใช้สูตร v² = u² + 2as ทีละช่วง ก็คำนวณได้ก่อนเลยว่ากล่องจะไปจอดตรงไหน ไม่ต้องเดา”');
-  await quiz(
+  await quiz('q2-friction-direction',
     'ขณะที่กล่องกำลังไถลช้าลงหลังปล่อยมือ แรงลัพธ์ที่กระทำต่อกล่องมีทิศทางใด ?',
     ['ไปข้างหน้า ทิศเดียวกับที่กล่องเคลื่อนที่',
      'ถอยหลัง สวนทางกับที่กล่องเคลื่อนที่',
@@ -1432,7 +1657,8 @@ async function frictionLesson(){
     ['กล่องกำลังเคลื่อนที่ไปข้างหน้าก็จริง แต่ไม่มีแรงไหนดันไปข้างหน้าแล้ว การเคลื่อนที่ไม่จำเป็นต้องมีแรงในทิศนั้น ลองใหม่นะ',
      '',
      'ถ้าแรงลัพธ์เป็นศูนย์ ความเร็วจะคงที่ แต่กล่องกำลังช้าลง แปลว่ายังมีแรงลัพธ์อยู่ ลองใหม่นะ',
-     'แรงเสียดทานจลน์ f = μmg มีขนาดคงที่ ไม่ขึ้นกับความเร็ว และชี้สวนทางการเคลื่อนที่เสมอ ลองใหม่นะ']
+     'แรงเสียดทานจลน์ f = μmg มีขนาดคงที่ ไม่ขึ้นกับความเร็ว และชี้สวนทางการเคลื่อนที่เสมอ ลองใหม่นะ'],
+    ['motion-needs-forward-force', '', 'slowing-means-zero-net-force', 'friction-depends-on-speed']
   );
   board(null);
 }
@@ -1454,7 +1680,9 @@ async function sandbox(){
     L.start(p);
     const f = L.f();
     if (p.F < 0){
-      await (-p.F <= f ? waitEvent('nomove') : waitAny(['stopped', 'gone']));
+      const held = -p.F <= f;
+      await (held ? waitEvent('nomove') : waitAny(['stopped', 'gone']));
+      track.attempt({ F:p.F, m:p.m, mu:p.mu }, held ? 'nomove' : 'wrong-way');
       if (p.mu === 0 && !wrongs) await say('ryuka', '“μ = 0 ก็คือลานน้ำแข็ง ผลักไปทางซ้ายก็ไถลไปทางซ้ายไม่หยุดเลย!”');
       else await wrongWay(p.F, f, !wrongs);
       wrongs++;
@@ -1462,11 +1690,13 @@ async function sandbox(){
     }
     if (p.F <= f){
       await waitEvent('nomove');
+      track.attempt({ F:p.F, m:p.m, mu:p.mu }, 'nomove');
       await say('ryuka', p.F === 0 ? '“ไม่ผลักเลย ก็ไม่ขยับสิ”'
         : `“ไม่ขยับเลย! แรงผลัก ${p.F} N ยังไม่มากกว่าแรงเสียดทาน ${f.toFixed(1)} N”`);
       L.reset(); continue;
     }
     const r = await waitAny(['stopped', 'gone']);
+    track.attempt({ F:p.F, m:p.m, mu:p.mu }, stopOutcome(r), r.name === 'stopped' ? r.data.err : null);
     if (r.name === 'stopped' && r.data.ok){
       wins++; fails = 0;
       await celebrate(`“จอดได้! m = ${p.m} kg, μ = ${p.mu.toFixed(2)} ได้ f = ${f.toFixed(1)} N ส่วนแรงผลัก ${p.F} N ≈ ${(p.F/f).toFixed(2)} เท่าของ f”`);
@@ -1483,20 +1713,28 @@ async function sandbox(){
     let msg;
     if (r.name === 'gone') msg = p.mu === 0 ? 'μ = 0 ก็คือลานน้ำแข็งแบบแรก ไม่มีแรงเสียดทาน กล่องเลยไม่หยุด' : 'ไถลเลยธงไปไกลมาก ลองลดแรงผลัก';
     else msg = r.data.err < 0 ? `จอดก่อนถึงจุดจอด ${(-r.data.err).toFixed(2)} m ลองเพิ่มแรงผลัก` : `จอดเลยจุดจอดไป ${r.data.err.toFixed(2)} m ลองลดแรงผลัก`;
-    if (fails >= 3 && p.mu > 0) await say('yuan', `“${msg} ใบ้ให้: ตอนนี้ f = μmg = ${f.toFixed(1)} N ลองใช้สูตรจากพาร์ทสอน (F − f) × 0.8 = f × 3.2”`);
-    else await say('ryuka', `“${msg}”`);
+    if (fails >= 3 && p.mu > 0){
+      track.hint();
+      await say('yuan', `“${msg} ใบ้ให้: ตอนนี้ f = μmg = ${f.toFixed(1)} N ลองใช้สูตรจากพาร์ทสอน (F − f) × 0.8 = f × 3.2”`);
+    } else await say('ryuka', `“${msg}”`);
   }
   showPanel(null);
 }
 
-async function quiz(q, opts, correct, why, wrong){
+// tags: the misconception behind each wrong option (logged for the teacher; '' for the right one)
+async function quiz(id, q, opts, correct, why, wrong, tags){
   const b = board(`<div class="q">${q}</div><div class="opts">${opts.map((o, i) =>
       `<button class="opt" data-i="${i}">${'กขคง'[i]}. ${o}</button>`).join('')}</div>`, true);
   const btns = [...b.querySelectorAll('.opt')];
+  const t0 = performance.now(), picks = [];
+  let tFirst = 0;
   while (true){
     say('yuan', 'ตอบคำถามบนกระดานหน่อย', { wait:false });
     const pick = await new Promise(res => btns.forEach(x => x.onclick = () => res(+x.dataset.i)));
+    if (!picks.length) tFirst = performance.now() - t0;
+    picks.push(pick);
     if (pick === correct){
+      track.quiz(id, picks, correct, tags, tFirst, performance.now() - t0);
       btns[pick].classList.add('right'); btns.forEach(x => x.disabled = true);
       await say('yuan', `ถูกต้อง! ${why}`);
       return;
@@ -1533,10 +1771,12 @@ async function bonus(){
     S.start(v);
     if (v === 0){
       await waitEvent('still');
+      track.attempt({ v }, 'nomove');
       await say('ryuka', '“กล่องไม่ขยับ เค้าก็ไม่ไปไหน (ΣF = 0 และนิ่งอยู่ ก็นิ่งต่อไป) ตั้งความเร็วหน่อยสิ”');
       S.reset(); continue;
     }
     const land = await waitEvent('landed');
+    track.attempt({ v }, land.ok ? 'success' : land.err < 0 ? 'short' : 'long', land.err);
     if (land.ok){
       const th = document.createElement('div'); th.id = 'thumb'; th.textContent = '👍'; stage.append(th);
       await say('yuan', `“เยี่ยม! ใช้ความเร็ว ${v.toFixed(1)} m/s ริวกะตกห่างธงแค่ ${Math.abs(land.err).toFixed(2)} m ลงเบาะพอดี”`);
@@ -1546,6 +1786,7 @@ async function bonus(){
     fails++;
     const msg = land.err < 0 ? `ตกก่อนถึงธง ${(-land.err).toFixed(2)} m ลองเพิ่มความเร็ว` : `เลยธงไป ${land.err.toFixed(2)} m ลองลดความเร็ว`;
     if (fails >= 2){
+      track.hint();
       await say('yuan', `${msg} ใบ้ให้: เวลาที่ลอยอยู่กลางอากาศขึ้นกับความสูงอย่างเดียว t = √(2h/g) = √(2×1.9/9.81) ≈ 0.62 s แล้ว D = v·t`);
     } else {
       await say('ryuka', `“${msg}… โอ๊ย”`);
@@ -1557,6 +1798,7 @@ async function bonus(){
 
 async function projectileLesson(S){
   setTitle('พาร์ทสอน (แถม)');
+  track.enter('projLesson');               // timed apart from the bonus level itself
   S.ticksTo = 3; S.ghost = null;
   S.showPair = true;
   board(`<span class="tag">ตอนกล่องชนที่กั้น</span>
@@ -1582,7 +1824,7 @@ async function projectileLesson(S){
     <div class="cap">v = 3.0 / 0.62 ≈ <b>4.8 m/s</b></div>
     <div class="small">เวลาลอยขึ้นกับความสูงเท่านั้น ไม่ขึ้นกับความเร็ว</div>`);
   await say('yuan', '“คิดแบบนี้ก็ได้คำตอบโดยไม่ต้องเดาเลย แกน x กับแกน y แยกกันคิดได้ ผูกกันด้วยเวลา t ตัวเดียวกัน”');
-  await quiz(
+  await quiz('q3-flight-time',
     'ถ้าเพิ่มความเร็วกล่องเป็น 2 เท่า ริวกะจะลอยอยู่กลางอากาศนานเท่าไร และตกไกลแค่ไหน ?',
     ['ลอยนานขึ้น 2 เท่า และตกไกลขึ้น 4 เท่า',
      'ลอยนานเท่าเดิม แต่ตกไกลขึ้น 2 เท่า',
@@ -1593,9 +1835,10 @@ async function projectileLesson(S){
     ['เวลาตกไม่ขึ้นกับความเร็วแนวนอน เพราะแกน y มีแค่แรงโน้มถ่วงเหมือนเดิม ลองใหม่นะ',
      '',
      'ความเร็วแนวนอนไม่ช่วยให้ตกเร็วขึ้นหรือช้าลง แกน y ยังตกด้วย g เท่าเดิม ลองใหม่นะ',
-     'เวลาตกเท่าเดิมถูกแล้ว แต่ระหว่างนั้นริวกะเคลื่อนที่แนวนอนเร็วขึ้น 2 เท่า (x = v t) ลองใหม่นะ']
+     'เวลาตกเท่าเดิมถูกแล้ว แต่ระหว่างนั้นริวกะเคลื่อนที่แนวนอนเร็วขึ้น 2 เท่า (x = v t) ลองใหม่นะ'],
+    ['flight-time-depends-on-speed', '', 'faster-falls-sooner', 'range-ignores-speed']
   );
-  await quiz(
+  await quiz('q4-third-law',
     'ตอนกล่องชนที่กั้น แรงที่กล่องดันที่กั้น เทียบกับแรงที่ที่กั้นดันกล่อง เป็นอย่างไร ?',
     ['กล่องดันแรงกว่า เพราะกล่องเป็นฝ่ายพุ่งเข้าไปชน',
      'ที่กั้นดันแรงกว่า เพราะกล่องเป็นฝ่ายหยุด',
@@ -1606,13 +1849,15 @@ async function projectileLesson(S){
     ['ใครพุ่งเข้าใส่ก็ไม่สำคัญ แรงกิริยาและปฏิกิริยามีขนาดเท่ากันเสมอ ลองใหม่นะ',
      'ขนาดเท่ากันเสมอตามกฎข้อ 3 กล่องหยุดเพราะมีแรงจากที่กั้นมากระทำ ไม่ใช่เพราะแรงนั้นใหญ่กว่า ลองใหม่นะ',
      '',
-     'สองแรงนี้กระทำกับวัตถุคนละก้อน (อันหนึ่งบนกล่อง อีกอันบนที่กั้น) จึงเอามารวมกันไม่ได้ ลองใหม่นะ']
+     'สองแรงนี้กระทำกับวัตถุคนละก้อน (อันหนึ่งบนกล่อง อีกอันบนที่กั้น) จึงเอามารวมกันไม่ได้ ลองใหม่นะ'],
+    ['mover-pushes-harder', 'stopper-pushes-harder', '', 'action-reaction-cancel']
   );
   board(null);
 }
 
 async function ending(){
   showPanel(null); board(null); $('dialog').hidden = true; setTitle('');
+  if (!track.feedbackDone) await feedback();
   overlay(`<h2>สรุปสิ่งที่ริวกะได้เรียนรู้ (แบบเจ็บตัว)</h2>
     <div class="sumGrid">
       <div class="law"><b>กฎข้อ 1</b> ถ้า ΣF = 0 ความเร็วไม่เปลี่ยน นิ่งก็นิ่งต่อ วิ่งก็วิ่งต่อด้วยความเร็วคงที่ กล่องบนน้ำแข็งเลยไม่หยุดเอง</div>
@@ -1623,24 +1868,50 @@ async function ending(){
       <div class="law"><b>โพรเจกไทล์</b> แกน x: x = v t (ไม่มีแรง); แกน y: Δy = ½ g t²; เวลาลอย t = √(2h/g) ขึ้นกับความสูงอย่างเดียว</div>
     </div>
     <div class="links"><button id="again">เล่นใหม่ตั้งแต่ต้น</button><button id="againBonus">เล่นด่านแถมอีกรอบ</button></div>`);
-  $('again').onclick = () => run(ALL);
-  $('againBonus').onclick = () => run(['bonus', 'end']);
+  $('again').onclick = () => run(FULL_RUN, 'replay');
+  $('againBonus').onclick = () => run(['bonus', 'end'], 'replay:bonus');
+}
+
+// End-of-game survey for the teacher (once per session).
+function feedback(){
+  const parts = track.visited.filter(k => k !== 'end');
+  const scale = (k, label, lo, hi) => `<div class="scale" data-k="${k}" role="group" aria-label="${label}">${[1, 2, 3, 4, 5].map(n =>
+      `<button data-v="${n}" aria-pressed="false">${n}</button>`).join('')}</div><small>1 = ${lo}; 5 = ${hi}</small>`;
+  overlay(`<h2>ก่อนดูสรุป ช่วยตอบสั้นๆ หน่อยนะ</h2>
+    <div class="fb">
+      <div class="fbRow"><span>เกมนี้ยากแค่ไหน</span>${scale('difficulty', 'เกมนี้ยากแค่ไหน', 'ง่ายมาก', 'ยากมาก')}</div>
+      <div class="fbRow"><span>สนุกแค่ไหน</span>${scale('enjoyment', 'สนุกแค่ไหน', 'ไม่สนุกเลย', 'สนุกมาก')}</div>
+      <div class="fbRow"><span>ส่วนไหนยากที่สุด</span><div class="scale" data-k="hardest" role="group" aria-label="ส่วนไหนยากที่สุด">${parts.map(k =>
+        `<button data-v="${k}" aria-pressed="false">${PART_NAME[k]}</button>`).join('')}</div></div>
+      <div class="fbRow"><label for="fbQ">ยังสงสัยอะไรอยู่ไหม</label><textarea id="fbQ" maxlength="300" placeholder="ส่วนที่ยังไม่เข้าใจ หรือสิ่งที่อยากถาม (ไม่บังคับ)"></textarea></div>
+    </div>
+    <div class="startRow"><button class="btnDark" id="fbSend">ส่ง แล้วดูสรุป</button><button class="btnGhost" id="fbSkip">ข้าม</button></div>`);
+  const ans = {};
+  $('overlay').querySelectorAll('.scale').forEach(g => g.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    g.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    ans[g.dataset.k] = b.dataset.v;
+  }));
+  return new Promise(res => {
+    $('fbSend').onclick = () => {
+      track.feedback({ difficulty:+ans.difficulty || '', enjoyment:+ans.enjoyment || '',
+        hardest:ans.hardest ? PART_NAME[ans.hardest] : '', question:$('fbQ').value.trim(), skipped:false });
+      res();
+    };
+    $('fbSkip').onclick = () => { track.feedback({ skipped:true }); res(); };
+  });
 }
 
 const STEPS = { ch1:chapter1, lesson, fric:frictionLevel, fricLesson:frictionLesson, sandbox, bonus, end:ending };
-const ALL = ['ch1', 'lesson', 'fric', 'fricLesson', 'sandbox', 'bonus', 'end'];
-// chapter list on the title screen, in story order (each one plays on to the end)
-const CHAPTERS = [
-  ['ch1',        'ด่านที่ 1 : กฎข้อที่ 1 ของนิวตัน'],
-  ['lesson',     'บทเรียน : แรงลัพธ์และความเฉื่อย'],
-  ['fric',       'ด่านที่ 1 (รอบที่ 2) : แรงเสียดทาน'],
-  ['fricLesson', 'บทเรียน : แรงเสียดทาน'],
-  ['sandbox',    'ด่านที่ 1 (ท้าทาย) : มวลและสัมประสิทธิ์ความเสียดทาน'],
-  ['bonus',      'ด่านพิเศษ : การเคลื่อนที่แบบโพรเจกไทล์']
-];
-async function run(list){
+async function run(list, entry = 'replay'){
   overlay(null); waiters = {}; clearLines();
-  for (const k of list) await STEPS[k]();
+  track.begin(entry);
+  for (const k of list){
+    track.enter(k);
+    await STEPS[k]();
+    track.leave(true);
+    track.saveProgress(FULL_RUN[FULL_RUN.indexOf(k) + 1] || null);
+  }
 }
 
 function titleScreen(){
@@ -1649,18 +1920,53 @@ function titleScreen(){
   overlay(`<h1>ริวกะกับกล่องที่ไม่ยอมหยุด</h1>
     <h2>กฎการเคลื่อนที่ของนิวตัน</h2>
     <div class="cast">
-      <img src="${ART.yuan}" alt="ยูอัน" style="height:196px">
-      <div class="onBox"><img src="${ART.ryuka}" alt="ริวกะ" style="height:146px"><div class="castBox">กล่อง</div></div>
-      <img src="${ART.kay}" alt="เคย์" style="height:182px">
+      <img src="${ART.yuan}" alt="ยูอัน" style="height:158px">
+      <div class="onBox"><img src="${ART.ryuka}" alt="ริวกะ" style="height:118px"><div class="castBox">กล่อง</div></div>
+      <img src="${ART.kay}" alt="เคย์" style="height:146px">
       <div class="ice"></div>
-      <div class="who">ยูอัน</div><div class="who">ริวกะ</div><div class="who">เคย์</div>
+      <div class="castName">ยูอัน</div><div class="castName">ริวกะ</div><div class="castName">เคย์</div>
     </div>
-    <button class="btnDark" id="start">เริ่มเล่น</button>
+    <div class="who">
+      <label>ชื่อ <input id="whoName" maxlength="40" autocomplete="off" placeholder="ชื่อ-นามสกุล หรือชื่อเล่น"></label>
+      <label>ชั้น <input id="whoRoom" maxlength="12" autocomplete="off" placeholder="เช่น ม.4/2"></label>
+    </div>
+    <div class="whoHint" id="whoHint" aria-live="polite"></div>
+    <div class="startRow"><button class="btnDark" id="start">เริ่มเล่น</button><button class="btnGhost" id="resume" hidden></button></div>
     <div class="chapters"><div class="lbl">หรือเลือกบทที่ต้องการ</div>
-      <div class="list">${CHAPTERS.map(([k, t], i) => `<button data-i="${i}">${t}</button>`).join('')}</div></div>`, 'ts');
-  $('start').onclick = () => run(ALL);
-  $('overlay').querySelectorAll('.chapters button').forEach(b => b.onclick = () => run(ALL.slice(ALL.indexOf(CHAPTERS[+b.dataset.i][0]))));
-  $('start').focus();
+      <div class="list">${FULL_RUN.filter(k => k !== 'end').map(k => `<button data-from="${k}">${PART_NAME[k]}</button>`).join('')}</div></div>`, 'ts');
+  const nameEl = $('whoName'), roomEl = $('whoRoom'), saved = track.student || {};
+  nameEl.value = saved.name || ''; roomEl.value = saved.room || '';
+  const clean = s => s.replace(/\s+/g, ' ').trim();
+  const who = () => ({ name:clean(nameEl.value), room:clean(roomEl.value) });
+  const showResume = () => {
+    const p = track.progressOf(who()), b = $('resume');
+    b.hidden = !(p && p.next && p.next !== 'ch1');
+    if (!b.hidden) b.textContent = `เล่นต่อ: ${PART_NAME[p.next]}`;
+  };
+  [nameEl, roomEl].forEach(el => el.addEventListener('input', () => {
+    el.classList.remove('err'); $('whoHint').textContent = ''; showResume();
+  }));
+  showResume();
+  const go = (from, entry) => {
+    const w = who();
+    nameEl.classList.toggle('err', !w.name); roomEl.classList.toggle('err', !w.room);
+    if (!w.name || !w.room){
+      $('whoHint').textContent = 'กรอกชื่อและชั้นก่อนเริ่มเล่นนะ';
+      (w.name ? roomEl : nameEl).focus();
+      return;
+    }
+    track.student = w; store.set('student', w);
+    run(FULL_RUN.slice(FULL_RUN.indexOf(from)), entry);
+  };
+  $('start').onclick = () => go('ch1', 'start');
+  $('resume').onclick = () => {
+    const p = track.progressOf(who());
+    if (!p || !p.next) return;
+    Object.assign(memo, p.memo || {});      // the lessons reuse the student's own numbers from earlier levels
+    go(p.next, 'resume:' + p.next);
+  };
+  $('overlay').querySelectorAll('[data-from]').forEach(b => b.onclick = () => go(b.dataset.from, b.dataset.from === 'ch1' ? 'start' : 'skip:' + b.dataset.from));
+  (nameEl.value && roomEl.value ? $('start') : nameEl).focus();
 }
 titleScreen();
 </script>
