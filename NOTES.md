@@ -28,13 +28,13 @@ The embedded sprites are the drawings from `assets/` with the white paper cut ou
 | *new* ด่านที่ 1 ท้าทาย | Sandbox: the player sets push force F (−1000 to 1000 N), total mass m (20–80 kg) and μ (0–0.25) and tries again. Starts at m = 60 kg, μ = 0.15. After the first success, ยูอัน points out that the right push is always 5 × f, because the mass cancels. μ = 0 brings back the "never stops" ice behaviour. |
 | 57 แถม | **Changed to projectile motion**: back on ice, a stopper halts the box, Ryuka keeps going (1st law) and flies off the ice platform. Slider = box speed (m/s); land on the cushion at the flag. Then a lesson on the 3rd law at the impact, x = vt / Δy = ½gt², and two quizzes. |
 
-The title screen lists every chapter by a formal name (เลือกบทที่ต้องการ); each one plays on to the end.
+The title screen asks for the student's ชื่อ and ชั้น (for the class Google Sheet, below), offers เล่นต่อ when that student stopped part-way, and lists every chapter by a formal name (หรือเลือกบทที่ต้องการ); each one plays on to the end. After the last part, a short feedback form comes before the summary.
 
 ## Panel, graphs and going back
 
 - Every value in the panel has its Thai name next to the symbol (แรงลัพธ์ ΣFₓ, ความเร่ง a, ความเร็ว v, การกระจัด x, เวลา t; in the bonus เวลาลอย, ตำแหน่งแนวราบ, ระยะตก, ความเร็วแนวราบ/แนวดิ่ง). The faint info lines separate items with ";" (a "·" reads as multiplication next to symbols).
 - The panel graph has v–t, a–t and x–t tabs (they stay clickable during a run). The t-axis sits at zero, so slowing down (a < 0) and moving left (v, x < 0) show below it.
-- ◂ ย้อนกลับ (or ←, PageUp, mouse wheel up over the dialogue bar) steps back through earlier lines. Each line keeps a snapshot of the board, the title and the scene as they were when it was said; the live game is paused underneath until you step forward past the newest line (→, Enter, a click, or "กลับไปบทปัจจุบัน").
+- ◂ ย้อนกลับ (or ←, PageUp, mouse wheel up over the dialogue bar) steps back through earlier lines. Each line keeps a snapshot of the board, the title and the scene as they were when it was said; the live game is paused underneath until you step forward past the newest line (→, Enter, a click, or "กลับไปข้อความล่าสุด").
 
 ## Velocity and force arrows
 
@@ -57,3 +57,28 @@ Forces are thick arrows (red/amber for pushes and weight, purple for friction); 
 - Level 1 (ice): m = 40 kg (box + Ryuka), push applied only over the first 0.8 m (in the direction of the push), v_release = √(2·(|F|/m)·0.8). μ = 0.
 - Friction levels: kinetic friction f = μmg (g = 9.81 m/s²), always against the sliding. Push phase a₁ = (F − f)/m over 0.8 m; slide phase a₂ = −f/m until v = 0 (signs flip for a push to the left). The parking spot is 4.0 m from the start (3.2 m after the hand-off), so the exact answer is F = 5 f for any m and μ (196 N on the first friction floor, f = 39.24 N); success window ±0.25 m. Simplification: maximum static friction is taken to equal kinetic friction, so the box moves only when |F| > f. Very slow runs are sped up on screen (labelled "เร่งเวลา ×n"); the numbers are unchanged.
 - Bonus: launch height h = 1.9 m (1.2 m platform + 0.7 m box), D = 3.0 m, t = √(2h/g) ≈ 0.62 s, target v ≈ 4.8 m/s (±0.25 m landing tolerance → about 4.4–5.2 m/s). Air resistance ignored; the top of the box is assumed slippery.
+
+## Student data (Google Sheet)
+
+Set up as described in the README. Every row carries `eid` (unique id; duplicates are dropped), `ts` (time), `name` and `room` (ชื่อ and ชั้น as typed on the title screen), and `sessionId` (one page load). Active time counts only while the tab is visible and the student has clicked, typed or touched something in the last 60 s. Anything longer counts as idle.
+
+| Tab | One row per | Columns |
+|---|---|---|
+| **Sessions** | page load where the student started playing (updated in place) | `startedAt`, `entry` (`start`, `skip:<part>`, `resume:<part>`), `runs` (1 + replays from the ending), `lastStep`, `furthest`, `reachedEnd`, `activeMin`, `device` (touch/mouse + screen size), `deviceId` (random, per browser) |
+| **Sections** | visit to one part | `section` / `part` (key / Thai name, the same formal names as the chapter list: ch1, lesson, fric, fricLesson, sandbox, bonus, projLesson, end), `enteredAt`, `activeSec`, `idleSec`, `completed`, `partial` (tab closed mid-part), `lines` (dialogue lines read), `slowLines` (the 3 lines that stayed up longest, with seconds; points to explanations students get stuck on) |
+| **Attempts** | press of ผลัก/เล่น in a level | `section`, `attemptNo`, the inputs `F` `m` `mu` (or `v` in the bonus), `outcome` (`nomove`, `gone`, `short`, `long`, `success`, or `wrong-way` when the box was pushed off to the left), `errM` (distance from the target, − = short), `thinkSec` (panel unlocked → play), `sliderMoves` (drags/key presses on the sliders plus typed edits), `typedExact` (typed a number in the box), `change` (vs. the previous try, e.g. `F +46`), `hintsBefore` (hints ยูอัน had already given in this visit) |
+| **Quiz** | quiz answered | `quizId`, `firstTryCorrect`, `tries`, `picks` (e.g. `ค → ข`), `wrongTags` (misconceptions behind the wrong picks, below), `secToFirstPick`, `secTotal` |
+| **Choices** | button choice in the dialogue | `section`, `question`, `pick`, `afterAttempts` (e.g. rewind vs. go to the lesson after the 1st miss) |
+| **Feedback** | end-of-game form (once per session) | `difficulty` 1–5, `enjoyment` 1–5, `hardest` (part), `question` (free text "ยังสงสัยอะไรอยู่"), `skipped` |
+| **Summary** | student (name + ชั้น), rebuilt by the Newton menu | minutes per part (heat map) and in total, the part with the most time, furthest part, finished, first-try quiz score /4, misconceptions seen, tries until the first success per level, average slider moves per try, % typed values, rough strategy (`พิมพ์ค่า (น่าจะคำนวณ)` when ≥ 50% of tries were typed values; `ลองผิดลองถูก` when ≥ 3 slider moves per try on average; otherwise `ผสม`), and the latest feedback. The last row is the class average. |
+
+Misconception tags in `wrongTags`:
+
+| Quiz | Wrong options → tag |
+|---|---|
+| `q1-inertia` | ก `force-stored-in-object` · ค `no-force-means-stop` · ง `acceleration-lingers` |
+| `q2-friction-direction` | ก `motion-needs-forward-force` · ค `slowing-means-zero-net-force` · ง `friction-depends-on-speed` |
+| `q3-flight-time` | ก `flight-time-depends-on-speed` · ค `faster-falls-sooner` · ง `range-ignores-speed` |
+| `q4-third-law` | ก `mover-pushes-harder` · ข `stopper-pushes-harder` · ง `action-reaction-cancel` |
+
+In the browser, the game keeps `nmg.student` (last name + ชั้น), `nmg.progress` (where each student can continue, plus their own numbers that the lessons reuse), and `nmg.outbox` (events not sent yet). They all live in `localStorage`, and the game still works if storage is blocked.
